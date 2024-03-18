@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema({
       validator: function (el) {
         return el === this.password;
       },
-      message: 'Password are not the same',
+      message: 'Passwords are not the same',
     },
   },
   passwordChangedAt: Date,
@@ -89,11 +89,13 @@ const userSchema = new mongoose.Schema({
   phone: {
     type: String,
     required: [true, 'Please provide us your phone number!'],
-    length: [true, 'Please provide a valide phone number with 10 digits!'],
+    minlength: [10, 'Please provide a valid phone number with 10 digits!'],
+    maxlength: [10, 'Please provide a valid phone number with 10 digits!'],
     validate: [
       {
         validator: validator.isNumeric,
-        message: 'Please provide a valid phone number',
+        message:
+          'Please provide a valid phone number(Only digits are allowed!)',
       },
       {
         validator: (num) =>
