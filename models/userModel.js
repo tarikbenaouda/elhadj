@@ -54,7 +54,10 @@ const userSchema = new mongoose.Schema({
       message: 'Passwords are not the same',
     },
   },
-  passwordChangedAt: Date,
+  passwordChangedAt: {
+    type: Date,
+    default: Date.now(),
+  },
   nationalNumber: {
     type: String,
     required: [true, 'Please enter your national number'],
@@ -110,6 +113,8 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide us your sexe!'],
     enum: ['male', 'female'],
   },
+  passwordResetToken: String,
+  passwordResetExpires: Date,
 });
 
 // Hashing Password before saving on the DB and deleting the passwordConfirm field
@@ -128,19 +133,44 @@ userSchema.methods.correctPassword = async function (
 // Not yet done
 userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
-    console.log(this.passwordChangedAt, JWTTimestamp); // Not yet done
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10,
+    );
+    return JWTTimestamp < changedTimestamp;
   }
 
+  // False means NOT changed
   return false;
 };
-userSchema.methods.createPasswordResetToken = function () {
-  const resetToken = crypto.randomBytes(32).toString('hex');
+
+userSchema.methods.createPasswordResetToken = async function () {
+  //const resetToken = crypto.randomBytes(32).toString('hex');
+  const resetToken = crypto.randomInt(0, 9999).toString().padStart(4, '0');
   this.passwordResetToken = crypto
     .createHash('sha256')
     .update(resetToken)
     .digest('hex');
   this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  await this.save({ validateBeforeSave: false });
   return resetToken;
+};
+userSchema.methods.verifyOTP = function (otp) {
+  const hashedOTP = crypto.createHash('sha256').update(otp).digest('hex');
+  return this.passwordResetToken === hashedOTP;
+};
+userSchema.methods.changePassword = async function (
+  newPassword,
+  newPasswordConfirm,
+) {
+  this.password = newPassword;
+  this.passwordConfirm = newPasswordConfirm;
+  this.passwordResetToken = undefined;
+  this.passwordResetExpires = undefined;
+  this.passwordChangedAt = Date.now();
+  await this.save();
+
+  // await this.save({ validateBeforeSave: false });
 };
 
 const User = mongoose.model('User', userSchema);
