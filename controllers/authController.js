@@ -131,7 +131,6 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
       ),
     );
   }
-  next();
 });
 exports.verifyOTP = catchAsync(async (req, res, next) => {
   const { email, otp } = req.body;
@@ -149,7 +148,6 @@ exports.verifyOTP = catchAsync(async (req, res, next) => {
     status: 'success',
     token,
   });
-  next();
 });
 exports.resetPassword = catchAsync(async (req, res, next) => {
   const { user } = req;
@@ -159,5 +157,4 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     status: 'success',
     message: 'Password changed successfully',
   });
-  next();
 });
