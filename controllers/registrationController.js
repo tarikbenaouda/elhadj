@@ -16,6 +16,8 @@ exports.getAllRegistrations = catchAsync(async (req, res, next) => {
   });
 });
 exports.register = catchAsync(async (req, res, next) => {
+  if (req.user.sex === 'female' && !req.body.mahrem)
+    return next(new AppError("You can't register without mahrem!", 400));
   const {
     defaultCoefficient,
     ageLimitToApply,

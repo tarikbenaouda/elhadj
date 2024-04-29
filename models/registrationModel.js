@@ -6,6 +6,7 @@ const registrationSchema = new mongoose.Schema(
       type: mongoose.Schema.ObjectId,
       ref: 'User',
       required: [true, 'A registration must belong to a user!'],
+      unique: true,
       select: false,
     },
     coefficient: {
