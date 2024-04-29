@@ -108,7 +108,7 @@ const userSchema = new mongoose.Schema({
       },
     ],
   },
-  sexe: {
+  sex: {
     type: String,
     required: [true, 'Please provide us your sexe!'],
     enum: ['male', 'female'],
