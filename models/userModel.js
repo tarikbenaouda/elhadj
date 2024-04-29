@@ -172,6 +172,25 @@ userSchema.methods.changePassword = async function (
 
   // await this.save({ validateBeforeSave: false });
 };
+// Define a method to calculate age based on birthdate
+userSchema.methods.calculateAge = function () {
+  const currentDate = new Date();
+  const { birthdate } = this;
+  const age = currentDate.getFullYear() - birthdate.getFullYear();
+  // Adjust age if the birthday hasn't occurred yet this year
+  if (
+    currentDate <
+    new Date(
+      currentDate.getFullYear(),
+      birthdate.getMonth(),
+      birthdate.getDate(),
+    )
+  ) {
+    return age - 1;
+  }
+
+  return age;
+};
 
 const User = mongoose.model('User', userSchema);
 
