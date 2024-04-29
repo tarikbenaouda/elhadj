@@ -15,7 +15,6 @@ const registrationSchema = new mongoose.Schema(
     mahrem: {
       type: mongoose.Schema.ObjectId,
       ref: 'User',
-      required: [true, 'A registration must have a mahrem!'],
     },
     createdAt: {
       type: Date,
