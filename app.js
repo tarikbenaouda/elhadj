@@ -8,6 +8,7 @@ const hpp = require('hpp');
 const cors = require('cors');
 
 const userRouter = require('./routes/userRoutes');
+const registrationRouter = require('./routes/registrationRoutes');
 const dashboardRouter = require('./routes/dashboardRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
@@ -46,9 +47,24 @@ app.use(xss());
 //   }),
 // );
 
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
+// Data sanitization against XSS(cross-site scripting)
+app.use(xss());
+
+// Prevent parameter pollution (hpp stands for http parameters pollution)
+// app.use(
+//   hpp({
+//     whitelist: ['duration'],
+//   }),
+// );
+
+// Routes
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/dashboard', dashboardRouter);
 
+app.use('/api/v1/registrations', registrationRouter);
 // For all unhandled routes
 app.all('*', (req, res, next) => {
   const err = new AppError(`Can't find ${req.originalUrl} on this server`, 404);

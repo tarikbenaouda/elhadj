@@ -2,17 +2,8 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
-const communeSchema = mongoose.Schema({
-  id: Number,
-  commune_name_ascii: String,
-  commune_name: String,
-  daira_name_ascii: String,
-  daira_name: String,
-  wilaya_code: String,
-  wilaya_name_ascii: String,
-  wilaya_name: String,
-});
-const Commune = mongoose.model('Commune', communeSchema);
+const Commune = require('../../models/communeModel');
+
 dotenv.config({ path: './config.env' });
 const communes = JSON.parse(
   fs.readFileSync(`${__dirname}/algeria_cities.json`, {

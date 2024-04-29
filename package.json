@@ -1,7 +1,7 @@
 {
-  "name": "natours",
+  "name": "elhadj",
   "version": "1.0.0",
-  "description": "learning node express and mogodb",
+  "description": "A simple RESTful API for elhadj application",
   "main": "app.js",
   "scripts": {
     "start": "nodemon server.js",
