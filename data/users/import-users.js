@@ -1,21 +1,11 @@
 const fs = require('fs');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const User = require('../../models/userModel');
 
-const communeSchema = mongoose.Schema({
-  id: Number,
-  commune_name_ascii: String,
-  commune_name: String,
-  daira_name_ascii: String,
-  daira_name: String,
-  wilaya_code: String,
-  wilaya_name_ascii: String,
-  wilaya_name: String,
-});
-const Commune = mongoose.model('Commune', communeSchema);
 dotenv.config({ path: './config.env' });
-const communes = JSON.parse(
-  fs.readFileSync(`${__dirname}/algeria_cities.json`, {
+const users = JSON.parse(
+  fs.readFileSync(`${__dirname}/users.json`, {
     encoding: 'utf8',
     flag: 'r',
   }),
@@ -24,7 +14,6 @@ const DB = process.env.DATABASE.replace(
   '<PASSWORD>',
   process.env.DATABASE_PASSWORD,
 );
-
 mongoose
   .connect(DB, {
     useNewUrlParser: true,
@@ -35,11 +24,19 @@ mongoose
   // eslint-disable-next-line no-unused-vars
   .then((con) => {
     console.log('DB connection successful');
+  })
+  .catch((err) => {
+    console.log(err.message);
   });
 
 const importData = async () => {
   try {
-    await Commune.create(communes);
+    // eslint-disable-next-line no-plusplus
+    for (let i = 135; i < 138; i++) {
+      // eslint-disable-next-line no-await-in-loop
+      await User.create(users.slice(i * 20, (i + 1) * 20));
+      console.log(`Data successfully imported ${(i + 1) * 20} users :)`);
+    }
     console.log('Data successfully imported :)');
   } catch (err) {
     console.log(err.message);
@@ -50,7 +47,7 @@ const importData = async () => {
 
 const deleteData = async () => {
   try {
-    await Commune.deleteMany();
+    await User.deleteMany();
     console.log('Data successfully deleted :)');
   } catch (err) {
     console.log(err.message);

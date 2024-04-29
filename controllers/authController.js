@@ -26,7 +26,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     commune: req.body.commune,
     address: req.body.address,
     phone: req.body.phone,
-    sexe: req.body.sexe,
+    sex: req.body.sex,
   });
 
   const token = signToken(newUser._id);
