@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const registrationHistorySchema = new mongoose.Schema({
-  user: {
+  userId: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',
     required: [true, 'Registration history must belong to a user!'],
@@ -19,7 +19,7 @@ registrationHistorySchema.statics.getRegistrationsNumber = async function (
   const mostRecentSelectedRegistration = await mongoose
     .model('RegistrationHistory')
     .findOne({
-      user: userId,
+      userId: userId,
       selected: true,
     })
     .sort({ registrationDate: -1 }); // Sort by registrationDate in descending order to get the most recent
@@ -27,13 +27,13 @@ registrationHistorySchema.statics.getRegistrationsNumber = async function (
   if (!mostRecentSelectedRegistration) {
     await mongoose
       .model('RegistrationHistory')
-      .countDocuments({ user: userId });
+      .countDocuments({ userId: userId });
     return 0;
   }
 
   // Step 2: Find all registrations where selected = false and the registrationDate is after the most recent selected registration's registrationDate
   const count = await mongoose.model('RegistrationHistory').countDocuments({
-    user: userId,
+    userId: userId,
     selected: false,
     registrationDate: { $gt: mostRecentSelectedRegistration.registrationDate },
   });
