@@ -34,12 +34,12 @@ exports.register = catchAsync(async (req, res, next) => {
   let mahrem;
   if (req.body.mahrem)
     mahrem = await User.findOne({ nationalNumber: req.body.mahrem });
-  if (!mahrem) {
+  if (req.user.sex === 'female' && !mahrem) {
     return next(
       new AppError('There is no user with this national number!', 404),
     );
   }
-  if (mahrem.sex === 'female')
+  if (req.user.sex === 'female' && mahrem.sex === 'female')
     return next(new AppError('Mahrem can not be a female!', 400));
 
   const registration = await Registration.create({

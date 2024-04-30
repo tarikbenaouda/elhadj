@@ -5,12 +5,13 @@ const User = require('../../models/userModel');
 const RegistrationHistory = require('../../models/registrationHistoryModel');
 
 dotenv.config({ path: './config.env' });
-const users = JSON.parse(
-  fs.readFileSync(`${__dirname}/registrationsHistory.json`, {
+const registrations = JSON.parse(
+  fs.readFileSync(`${__dirname}/registrations1.json`, {
     encoding: 'utf8',
     flag: 'r',
   }),
 );
+console.log(registrations.length);
 const DB = process.env.DATABASE.replace(
   '<PASSWORD>',
   process.env.DATABASE_PASSWORD,
@@ -32,11 +33,20 @@ mongoose
 
 const importData = async () => {
   try {
+    let id;
     // eslint-disable-next-line no-plusplus
-    for (let i = 0; i < 1000; i++) {
+    for (let i = 0; i < 1500; i++) {
+      console.log(registrations[i].nationalNumber);
       // eslint-disable-next-line no-await-in-loop
-      await User.find(users.slice(i * 20, (i + 1) * 20));
-      console.log(`Data successfully imported ${(i + 1) * 20} users :)`);
+      id = await User.find({
+        nationalNumber: String(registrations[i].nationalNumber),
+      });
+      delete registrations[i].nationalNumber;
+      registrations[i].userId = id;
+      console.log(registrations[i].userId);
+      // eslint-disable-next-line no-await-in-loop
+      await RegistrationHistory.create(registrations[i]);
+      console.log(`Data successfully imported ${i} users :)`);
     }
     console.log('Data successfully imported :)');
   } catch (err) {
