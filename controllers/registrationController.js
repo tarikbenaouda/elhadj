@@ -43,7 +43,7 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new AppError('Mahrem can not be a female!', 400));
 
   const registration = await Registration.create({
-    userId: req.user.id,
+    userId: req.user,
     coefficient,
     mahrem,
   });
