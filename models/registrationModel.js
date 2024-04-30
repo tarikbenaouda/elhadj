@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const registrationSchema = new mongoose.Schema(
   {
-    user: {
+    userId: {
       type: mongoose.Schema.ObjectId,
       ref: 'User',
       required: [true, 'A registration must belong to a user!'],
@@ -28,7 +28,7 @@ const registrationSchema = new mongoose.Schema(
   },
 );
 registrationSchema.pre(/^find/, function () {
-  this.populate({ path: 'user', select: 'firstName lastName commune' });
+  this.populate({ path: 'userId', select: 'firstName lastName commune' });
 });
 const Registration = mongoose.model('Registration', registrationSchema);
 module.exports = Registration;
