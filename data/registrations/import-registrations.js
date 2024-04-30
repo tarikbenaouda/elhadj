@@ -2,11 +2,11 @@ const fs = require('fs');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const User = require('../../models/userModel');
-const RegistrationHistory = require('../../models/registrationHistoryModel');
+const Registration = require('../../models/registrationModel');
 
 dotenv.config({ path: './config.env' });
 const registrations = JSON.parse(
-  fs.readFileSync(`${__dirname}/registrations6.json`, {
+  fs.readFileSync(`${__dirname}/registrations.json`, {
     encoding: 'utf8',
     flag: 'r',
   }),
@@ -36,7 +36,7 @@ const importData = async () => {
     let id;
     let mahrem;
     // eslint-disable-next-line no-plusplus
-    for (let i = 0; i < 1500; i++) {
+    for (let i = 0; i < 2764; i++) {
       console.log(registrations[i].nationalNumber);
       // eslint-disable-next-line no-await-in-loop
       id = await User.findOne({
@@ -48,9 +48,9 @@ const importData = async () => {
       });
       delete registrations[i].nationalNumber;
       registrations[i].userId = id;
-      registrations[i].mahrem = mahrem;
+      registrations[i].mahrem = mahrem ? mahrem._id : undefined;
       // eslint-disable-next-line no-await-in-loop
-      await RegistrationHistory.create(registrations[i]);
+      await Registration.create(registrations[i]);
       console.log(`Data successfully imported ${i} users :)`);
     }
     console.log('Data successfully imported :)');
@@ -63,7 +63,7 @@ const importData = async () => {
 
 const deleteData = async () => {
   try {
-    await RegistrationHistory.deleteMany();
+    await Registration.deleteMany({});
     console.log('Data successfully deleted :)');
   } catch (err) {
     console.log(err.message);
