@@ -3,7 +3,12 @@ const authController = require('../controllers/authController');
 const dashboardController = require('../controllers/dashboardController');
 
 const router = express.Router();
-
+router.post(
+  '/draw',
+  authController.protect,
+  authController.restrictTo('admin'),
+  dashboardController.executeDraw,
+);
 router
   //   .get(
   //     '/algorithm',
