@@ -10,7 +10,29 @@ const signToken = (id, exp) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: exp || process.env.JWT_EXPIRES_IN,
   });
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user._id);
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000,
+    ),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
 
+  res.cookie('jwt', token, cookieOptions);
+
+  // Remove password from output
+  user.password = undefined;
+
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user,
+    },
+  });
+};
 // Sign up function
 exports.signup = catchAsync(async (req, res, next) => {
   const newUser = await User.create({
@@ -29,14 +51,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     sex: req.body.sex,
   });
 
-  const token = signToken(newUser._id);
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: {
-      user: newUser,
-    },
-  });
+  createSendToken(newUser, 201, res);
 });
 // Log in function
 exports.login = catchAsync(async (req, res, next) => {
@@ -48,12 +63,7 @@ exports.login = catchAsync(async (req, res, next) => {
   if (!user) return next(new AppError('Incorrect email or password', 401));
   const correct = await user.correctPassword(password, user.password);
   if (!correct) return next(new AppError('Incorrect email or password', 401));
-  const token = signToken(user._id);
-  res.status(201).json({
-    status: 'success',
-    token,
-    data: { role: user.role },
-  });
+  createSendToken(user, 200, res);
 });
 
 // Use it as middleware to check if user is logged in or not
@@ -138,18 +148,28 @@ exports.verifyOTP = catchAsync(async (req, res, next) => {
   if (!user.verifyOTP(otp)) return next(new AppError('Incorrect OTP', 401));
   if (Date.now() > user.passwordResetExpires)
     return next(new AppError('OTP expired', 401));
-  const token = signToken(user._id, '10m');
-  res.status(201).json({
-    status: 'success',
-    token,
-  });
+  createSendToken(user, 200, res);
 });
 exports.resetPassword = catchAsync(async (req, res, next) => {
   const { user } = req;
 
   await user.changePassword(req.body.password, req.body.passwordConfirm);
-  res.status(201).json({
-    status: 'success',
-    message: 'Password changed successfully',
-  });
+  createSendToken(user, 200, res);
+});
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  // 1) Get user from collection
+  const user = await User.findById(req.user.id).select('+password');
+
+  // 2) Check if POSTed current password is correct
+  if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
+    return next(new AppError('Your current password is wrong.', 401));
+  }
+
+  // 3) If so, update password
+  user.password = req.body.password;
+  user.passwordConfirm = req.body.passwordConfirm;
+  await user.save();
+
+  createSendToken(user, 200, res);
 });
