@@ -14,7 +14,7 @@ router.post('/verifyOTP', authController.verifyOTP);
 router.use(authController.protect);
 
 router.post('/resetPassword', authController.resetPassword);
-//router.patch('/updateMyPassword', authController.updatePassword);
+router.patch('/updateMyPassword', authController.updatePassword);
 router.get('/me', userController.getMe, userController.getUser);
 router.patch('/updateMe', userController.updateMe);
 
