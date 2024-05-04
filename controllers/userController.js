@@ -2,6 +2,7 @@
 const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const APIFeatures = require('../utils/apiFeatures');
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -51,11 +52,19 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find();
+  const features = new APIFeatures(User.find(), req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate();
+  const users = await features.query;
+
+  // SEND RESPONSE
   res.status(200).json({
     status: 'success',
+    results: users.length,
     data: {
-      users,
+      data: users,
     },
   });
 });

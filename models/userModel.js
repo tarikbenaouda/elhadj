@@ -121,14 +121,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     // Define your virtual field
-    toJSON: {
-      virtuals: true,
-      transform: function (doc, ret) {
-        ret.id = ret._id; // Set id to _id
-        delete ret._id; // Remove _id
-        delete ret.__v; // Remove __v if you want
-      },
-    },
+    toJSON: { virtuals: true },
     toObject: { virtuals: true },
   },
 );
