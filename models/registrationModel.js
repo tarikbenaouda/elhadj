@@ -36,9 +36,9 @@ const registrationSchema = new mongoose.Schema(
 
 registrationSchema.statics.getExcludedWinners = async function (commune, age) {
   // Fetch winners and extract their user IDs
-  const winners = await Winner.find();
+  const winners = await Winner.find().lean();
   const winnerUserIds = winners.map((winner) => winner.userId.toString());
-  const reserves = await Reserve.find();
+  const reserves = await Reserve.find().lean();
   const reserveUserIds = reserves.map((reserve) => reserve.userId.toString());
   const excludedUserIds = [...winnerUserIds, ...reserveUserIds];
   const match = {
@@ -52,11 +52,12 @@ registrationSchema.statics.getExcludedWinners = async function (commune, age) {
     );
     match.birthdate = { $lte: ageDate }; // Only include users who are at least 'age' years old
   }
-  const registrations = await this.find().populate({
-    path: 'userId',
-    select: 'firstName lastName commune wilaya birthdate', // Include birthdate to calculate age
-    match: match,
-  });
+  const registrations = await this.find(match)
+    .populate({
+      path: 'userId',
+      select: 'firstName lastName commune wilaya birthdate', // Include birthdate to calculate age
+    })
+    .lean();
 
   return registrations;
 };
@@ -159,11 +160,11 @@ registrationSchema.statics.performDraw = async function (options) {
       },
     ];
 
-    let count = await Winner.aggregate(countAll);
+    let count = await Winner.aggregate(countAll).lean();
     count = count.length > 0 ? count[0].count : 0;
     let remainingQuota = quota !== undefined ? quota - count : 0;
 
-    let reserveCount = await Reserve.aggregate(countAll);
+    let reserveCount = await Reserve.aggregate(countAll).lean();
     reserveCount = reserveCount.length > 0 ? reserveCount[0].count : 0;
     let remainingReserve =
       reservePlace !== undefined ? reservePlace - reserveCount : 0;
