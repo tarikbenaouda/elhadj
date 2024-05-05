@@ -4,6 +4,12 @@ const dashboardController = require('../controllers/dashboardController');
 
 const router = express.Router();
 router.post(
+  '/drawList',
+  authController.protect,
+  authController.restrictTo('admin'),
+  dashboardController.getDuplicatedList,
+);
+router.post(
   '/draw',
   authController.protect,
   authController.restrictTo('admin'),

@@ -8,6 +8,10 @@ const communeSchema = new mongoose.Schema({
     type: Number,
     default: Math.floor(this.population / 10),
   },
+  reservePlace: {
+    type: Number,
+    default: 0,
+  },
   admin: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',

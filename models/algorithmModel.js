@@ -9,34 +9,42 @@ const algoSchema = new mongoose.Schema(
     defaultCoefficient: {
       type: Number,
       default: 1,
+      min: 1,
     },
     ageLimitToApply: {
       type: Number,
       default: null,
+      min: 1,
     },
     percentageOfQuota: {
       type: Number,
       default: null,
+      min: 0,
+      max: 100,
     },
     ageCoefficient: {
       type: Number,
       default: 1,
+      min: 0,
     },
     registerCoefficient: {
       type: Number,
       default: 1,
+      min: 1,
     },
     hadjLimitToApply: {
       type: Number,
-      default: null,
+      default: 0,
+      min: 0,
     },
     permit: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     penaltyCoefficient: {
       type: Number,
       default: 0,
+      min: 0,
     },
 
     createdAt: {
@@ -48,6 +56,10 @@ const algoSchema = new mongoose.Schema(
     },
   },
   { timestamps: true },
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  },
 );
 
 const Algo = mongoose.model('Algo', algoSchema);

@@ -12,109 +12,134 @@ const wilayas = JSON.parse(
   }),
 ).map((wilay) => wilay.name);
 
-const userSchema = new mongoose.Schema({
-  firstName: {
-    type: String,
-    required: [true, 'Please tell us your first name!'],
-    minlength: [3, 'Is your first name less than 3 chars?'],
-    maxlength: [30, 'Too long!'],
-  },
-  lastName: {
-    type: String,
-    required: [true, 'Please tell us your first name!'],
-    minlength: [3, 'Is your last name less than 3 chars?'],
-    maxlength: [30, 'Too long!'],
-  },
-  email: {
-    type: String,
-    required: [true, 'Please provide your email!'],
-    unique: [true, 'This email is already signed up!'],
-    lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valide email!'],
-  },
-  photo: String,
-  role: {
-    type: String,
-    enum: ['user', 'doctor', 'admin', 'super-admin'],
-    default: 'user',
-  },
-  password: {
-    type: String,
-    required: [true, 'Please provide a password!'],
-    minlength: [8, 'Password must contain at least 8 characters!'],
-    select: false,
-  },
-  passwordConfirm: {
-    type: String,
-    required: [true, 'Please confirm your password!'],
-    validate: {
-      validator: function (el) {
-        return el === this.password;
-      },
-      message: 'Passwords are not the same',
+const userSchema = new mongoose.Schema(
+  {
+    firstName: {
+      type: String,
+      required: [true, 'Please tell us your first name!'],
+      minlength: [3, 'Is your first name less than 3 chars?'],
+      maxlength: [30, 'Too long!'],
     },
-  },
-  passwordChangedAt: {
-    type: Date,
-    default: Date.now(),
-  },
-  nationalNumber: {
-    type: String,
-    required: [true, 'Please enter your national number'],
-    length: [9, 'The national number must be with 9 digits'],
-    unique: [true, 'This national number is already signed up!'],
-    validate: [
-      validator.isNumeric,
-      'Only digits are allowed in national number',
-    ],
-  },
-  birthdate: {
-    type: Date,
-    required: [true, 'Please provide us your birthdate'],
-    trim: true,
-    validate: [validator.isDate, 'Please provide a valid birthdate!'],
-  },
-  wilaya: {
-    type: String,
-    required: [true, 'Please provide us your wilaya!'],
-    enum: wilayas,
-  },
-  commune: {
-    type: String,
-    required: [true, 'Please provide us your commune!'],
-    // TODO :: enum: communes,
-  },
-  address: {
-    type: String,
-    required: [true, 'Please provide us your address!'],
-    minlength: [5, 'Please provide a valid address'],
-    maxlength: [50, 'Please provide a valid address'],
-  },
-  phone: {
-    type: String,
-    required: [true, 'Please provide us your phone number!'],
-    minlength: [10, 'Please provide a valid phone number with 10 digits!'],
-    maxlength: [10, 'Please provide a valid phone number with 10 digits!'],
-    validate: [
-      {
-        validator: validator.isNumeric,
-        message:
-          'Please provide a valid phone number(Only digits are allowed!)',
+    lastName: {
+      type: String,
+      required: [true, 'Please tell us your first name!'],
+      minlength: [3, 'Is your last name less than 3 chars?'],
+      maxlength: [30, 'Too long!'],
+    },
+    email: {
+      type: String,
+      required: [true, 'Please provide your email!'],
+      unique: [true, 'This email is already signed up!'],
+      lowercase: true,
+      validate: [validator.isEmail, 'Please provide a valide email!'],
+    },
+    photo: String,
+    role: {
+      type: String,
+      enum: ['user', 'doctor', 'admin', 'super-admin'],
+      default: 'user',
+    },
+    password: {
+      type: String,
+      required: [true, 'Please provide a password!'],
+      minlength: [8, 'Password must contain at least 8 characters!'],
+      select: false,
+    },
+    passwordConfirm: {
+      type: String,
+      required: [true, 'Please confirm your password!'],
+      validate: {
+        validator: function (el) {
+          return el === this.password;
+        },
+        message: 'Passwords are not the same',
       },
-      {
-        validator: (num) =>
-          num.startsWith('05') || num.startsWith('06') || num.startsWith('07'),
-        message: 'Please provide a valid phone number',
-      },
-    ],
+    },
+    passwordChangedAt: {
+      type: Date,
+      default: Date.now(),
+    },
+    nationalNumber: {
+      type: String,
+      required: [true, 'Please enter your national number'],
+      length: [9, 'The national number must be with 9 digits'],
+      unique: [true, 'This national number is already signed up!'],
+      validate: [
+        validator.isNumeric,
+        'Only digits are allowed in national number',
+      ],
+    },
+    birthdate: {
+      type: Date,
+      required: [true, 'Please provide us your birthdate'],
+      trim: true,
+      validate: [validator.isDate, 'Please provide a valid birthdate!'],
+    },
+    wilaya: {
+      type: String,
+      required: [true, 'Please provide us your wilaya!'],
+      enum: wilayas,
+    },
+    commune: {
+      type: String,
+      required: [true, 'Please provide us your commune!'],
+      // TODO :: enum: communes,
+    },
+    address: {
+      type: String,
+      required: [true, 'Please provide us your address!'],
+      minlength: [5, 'Please provide a valid address'],
+      maxlength: [50, 'Please provide a valid address'],
+    },
+    phone: {
+      type: String,
+      required: [true, 'Please provide us your phone number!'],
+      minlength: [10, 'Please provide a valid phone number with 10 digits!'],
+      maxlength: [10, 'Please provide a valid phone number with 10 digits!'],
+      validate: [
+        {
+          validator: validator.isNumeric,
+          message:
+            'Please provide a valid phone number(Only digits are allowed!)',
+        },
+        {
+          validator: (num) =>
+            num.startsWith('05') ||
+            num.startsWith('06') ||
+            num.startsWith('07'),
+          message: 'Please provide a valid phone number',
+        },
+      ],
+    },
+    sex: {
+      type: String,
+      required: [true, 'Please provide us your sexe!'],
+      enum: ['male', 'female'],
+    },
+    passwordResetToken: String,
+    passwordResetExpires: Date,
+    // active: {
+    //   type: Boolean,
+    //   default: true,
+    //   select: false,
+    // },
   },
-  sex: {
-    type: String,
-    required: [true, 'Please provide us your sexe!'],
-    enum: ['male', 'female'],
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+    id: false,
   },
-  passwordResetToken: String,
-  passwordResetExpires: Date,
+);
+
+userSchema.virtual('age').get(function () {
+  const today = new Date();
+  const birthDate = new Date(this.birthdate);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age -= 1;
+  }
+  return age;
 });
 
 // Hashing Password before saving on the DB and deleting the passwordConfirm field
@@ -171,25 +196,6 @@ userSchema.methods.changePassword = async function (
   await this.save();
 
   // await this.save({ validateBeforeSave: false });
-};
-// Define a method to calculate age based on birthdate
-userSchema.methods.calculateAge = function () {
-  const currentDate = new Date();
-  const { birthdate } = this;
-  const age = currentDate.getFullYear() - birthdate.getFullYear();
-  // Adjust age if the birthday hasn't occurred yet this year
-  if (
-    currentDate <
-    new Date(
-      currentDate.getFullYear(),
-      birthdate.getMonth(),
-      birthdate.getDate(),
-    )
-  ) {
-    return age - 1;
-  }
-
-  return age;
 };
 
 const User = mongoose.model('User', userSchema);
