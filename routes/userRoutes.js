@@ -9,24 +9,22 @@ router.post('/login', authController.login);
 
 router.post('/forgotPassword', authController.forgotPassword);
 router.post('/verifyOTP', authController.verifyOTP);
-router.post(
-  '/resetPassword',
-  authController.protect,
-  authController.resetPassword,
-);
 
-router
-  .route('/')
-  .get(
-    authController.protect,
-    authController.restrictTo('super-admin', 'admin'),
-    userController.getAllUsers,
-  )
-  .post(userController.createUser);
+// Routes that require authentication
+router.use(authController.protect);
+
+router.post('/resetPassword', authController.resetPassword);
+router.patch('/updateMyPassword', authController.updatePassword);
+router.get('/me', userController.getMe, userController.getUser);
+router.patch('/updateMe', userController.updateMe);
+
+// Routes that require authorization
+router.use(authController.restrictTo('super-admin', 'admin'));
+
+router.route('/').get(userController.getAllUsers);
 router
   .route('/:id')
   .get(userController.getUser)
-  .patch(userController.updateUser)
-  .delete(authController.protect, userController.deleteUser);
+  .delete(userController.deleteUser);
 
 module.exports = router;

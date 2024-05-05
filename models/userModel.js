@@ -149,13 +149,18 @@ userSchema.pre('save', async function (next) {
   this.passwordConfirm = undefined;
   next();
 });
+userSchema.pre('save', function (next) {
+  if (!this.isModified('password') || this.isNew) return next();
+
+  this.passwordChangedAt = Date.now() - 1000;
+  next();
+});
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword,
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
-// Not yet done
 userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
     const changedTimestamp = parseInt(
@@ -164,13 +169,10 @@ userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
     );
     return JWTTimestamp < changedTimestamp;
   }
-
-  // False means NOT changed
   return false;
 };
 
 userSchema.methods.createPasswordResetToken = async function () {
-  //const resetToken = crypto.randomBytes(32).toString('hex');
   const resetToken = crypto.randomInt(0, 9999).toString().padStart(4, '0');
   this.passwordResetToken = crypto
     .createHash('sha256')

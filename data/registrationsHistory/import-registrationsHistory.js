@@ -48,7 +48,7 @@ const importData = async () => {
       });
       delete registrations[i].nationalNumber;
       registrations[i].userId = id;
-      registrations[i].mahrem = mahrem;
+      if (mahrem) registrations[i].mahrem = mahrem;
       // eslint-disable-next-line no-await-in-loop
       await RegistrationHistory.create(registrations[i]);
       console.log(`Data successfully imported ${i} users :)`);

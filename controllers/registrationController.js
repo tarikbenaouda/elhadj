@@ -30,7 +30,7 @@ exports.register = catchAsync(async (req, res, next) => {
   const coefficient =
     defaultCoefficient +
     registrations * registerCoefficient +
-    (req.user.calculateAge() > ageLimitToApply ? ageCoefficient : 0);
+    (req.user.age > ageLimitToApply ? ageCoefficient : 0);
   let mahrem;
   if (req.body.mahrem)
     mahrem = await User.findOne({ nationalNumber: req.body.mahrem });
@@ -41,15 +41,19 @@ exports.register = catchAsync(async (req, res, next) => {
   }
   if (req.user.sex === 'female' && mahrem.sex === 'female')
     return next(new AppError('Mahrem can not be a female!', 400));
-  const registration = await Registration.create({
-    userId: req.user._id,
-    coefficient,
-    mahrem: mahrem ? mahrem._id : undefined,
-  });
-  res.status(201).json({
-    status: 'success',
-    data: {
-      registration,
-    },
-  });
+  try {
+    const registration = await Registration.create({
+      userId: req.user._id,
+      coefficient,
+      mahrem: mahrem ? mahrem._id : undefined,
+    });
+    res.status(201).json({
+      status: 'success',
+      data: {
+        registration,
+      },
+    });
+  } catch (err) {
+    return next(new AppError('You have already registered!', 400));
+  }
 });

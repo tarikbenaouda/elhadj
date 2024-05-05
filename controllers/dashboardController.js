@@ -10,14 +10,6 @@ const Commune = require('../models/communeModel');
 const Registration = require('../models/registrationModel');
 const Winner = require('../models/winnersModel');
 
-// exports.getAdmin = async (req, res, next) => {
-//   const adminId = req.user._id;
-//   const { commune, quota } = await Commune.findOne({
-//     admin: new ObjectId(adminId),
-//   });
-//   req.body.commune = commune;
-//   req.body.quota = quota;
-// };
 exports.getDuplicatedList = catchAsync(async (req, res, next) => {
   const adminId = req.user._id;
   const { commune, quota } = await Commune.findOne({
