@@ -4,10 +4,7 @@ const communeSchema = new mongoose.Schema({
   commune: String,
   wilaya: String,
   population: Number,
-  quota: {
-    type: Number,
-    default: Math.floor(this.population / 10),
-  },
+  quota: Number,
   admin: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
 const Commune = require('../../models/communeModel');
+const User = require('../../models/userModel');
 
 dotenv.config({ path: './config.env' });
 const communes = JSON.parse(
@@ -30,6 +31,13 @@ mongoose
 
 const importData = async () => {
   try {
+    const admins = await User.find({ role: 'admin' }).lean();
+    communes.forEach((commune) => {
+      const admin = admins.find((a) => a.commune === commune.commune);
+      commune.admin = admin._id;
+      commune.quota = Math.floor(+commune.population / 10);
+      commune.reserve = Math.floor(+commune.population / 100) + 1;
+    });
     await Commune.create(communes);
     console.log('Data successfully imported :)');
   } catch (err) {
