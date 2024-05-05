@@ -10,6 +10,7 @@ const communeSchema = new mongoose.Schema({
     ref: 'User',
     default: null,
   },
+  reserve: Number,
 });
 const Commune = mongoose.model('Commune', communeSchema);
 module.exports = Commune;
