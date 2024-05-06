@@ -36,9 +36,9 @@ const registrationSchema = new mongoose.Schema(
 
 registrationSchema.statics.getExcludedWinners = async function (commune, age) {
   // Fetch winners and extract their user IDs
-  const winners = await Winner.find().lean();
+  const winners = await Winner.find();
   const winnerUserIds = winners.map((winner) => winner.userId.toString());
-  const reserves = await Reserve.find().lean();
+  const reserves = await Reserve.find();
   const reserveUserIds = reserves.map((reserve) => reserve.userId.toString());
   const excludedUserIds = [...winnerUserIds, ...reserveUserIds];
   const match = {
@@ -52,12 +52,11 @@ registrationSchema.statics.getExcludedWinners = async function (commune, age) {
     );
     match.birthdate = { $lte: ageDate }; // Only include users who are at least 'age' years old
   }
-  const registrations = await this.find(match)
-    .populate({
-      path: 'userId',
-      select: 'firstName lastName commune wilaya birthdate', // Include birthdate to calculate age
-    })
-    .lean();
+  const registrations = await this.find().populate({
+    path: 'userId',
+    select: 'firstName lastName commune wilaya birthdate',
+    match: match, // Include birthdate to calculate age
+  });
 
   return registrations;
 };
