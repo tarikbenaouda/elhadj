@@ -1,28 +1,21 @@
 const mongoose = require('mongoose');
 
-const winnersSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: mongoose.Schema.ObjectId,
-      ref: 'User',
-      required: [true, 'A winner must be a user!'],
-      unique: true,
-    },
-    mahrem: {
-      type: mongoose.Schema.ObjectId,
-      ref: 'User',
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now(),
-    },
+const winnersSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required: [true, 'A winner must be a user!'],
+    unique: true,
   },
-  {
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-    id: false,
+  mahrem: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
   },
-);
+  createdAt: {
+    type: Date,
+    default: Date.now(),
+  },
+});
 
 winnersSchema.statics.countWinnersByAge = async function (age) {
   const winners = await this.find().populate('userId');

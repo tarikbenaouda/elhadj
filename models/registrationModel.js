@@ -7,38 +7,32 @@ const mongoose = require('mongoose');
 const Winner = require('./winnersModel');
 const Reserve = require('./reserveModel');
 
-const registrationSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: mongoose.Schema.ObjectId,
-      ref: 'User',
-      required: [true, 'A registration must belong to a user!'],
-      unique: true,
-    },
-    coefficient: {
-      type: Number,
-      default: 1,
-    },
-    mahrem: {
-      type: mongoose.Schema.ObjectId,
-      ref: 'User',
-    },
-    createdAt: {
-      type: Date,
-      default: () => Date.now(),
-    },
+const registrationSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    required: [true, 'A registration must belong to a user!'],
+    unique: true,
   },
-  {
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+  coefficient: {
+    type: Number,
+    default: 1,
   },
-);
+  mahrem: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+  },
+  createdAt: {
+    type: Date,
+    default: () => Date.now(),
+  },
+});
 
 registrationSchema.statics.getExcludedWinners = async function (commune, age) {
   // Fetch winners and extract their user IDs
-  const winners = await Winner.find();
+  const winners = await Winner.find().lean();
   const winnerUserIds = winners.map((winner) => winner.userId.toString());
-  const reserves = await Reserve.find();
+  const reserves = await Reserve.find().lean();
   const reserveUserIds = reserves.map((reserve) => reserve.userId.toString());
   const excludedUserIds = [...winnerUserIds, ...reserveUserIds];
   const match = {
@@ -54,7 +48,7 @@ registrationSchema.statics.getExcludedWinners = async function (commune, age) {
   }
   const registrations = await this.find().populate({
     path: 'userId',
-    select: 'firstName lastName commune wilaya birthdate',
+    select: 'firstName lastName commune wilaya birthdate  ',
     match: match, // Include birthdate to calculate age
   });
 
@@ -128,6 +122,7 @@ registrationSchema.statics.processDrawnUser = async function (
       }
       if (isFemale && remaining === 1) {
         drawPool.splice(randomIndex, 1);
+        console.log('picked a Female with a remaining place of 1');
         // don't return, just continue to the next iteration
       }
     }
@@ -159,11 +154,11 @@ registrationSchema.statics.performDraw = async function (options) {
       },
     ];
 
-    let count = await Winner.aggregate(countAll).lean();
+    let count = await Winner.aggregate(countAll);
     count = count.length > 0 ? count[0].count : 0;
     let remainingQuota = quota !== undefined ? quota - count : 0;
 
-    let reserveCount = await Reserve.aggregate(countAll).lean();
+    let reserveCount = await Reserve.aggregate(countAll);
     reserveCount = reserveCount.length > 0 ? reserveCount[0].count : 0;
     let remainingReserve =
       reservePlace !== undefined ? reservePlace - reserveCount : 0;

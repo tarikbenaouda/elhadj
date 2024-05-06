@@ -10,11 +10,16 @@ const Commune = require('../models/communeModel');
 const Registration = require('../models/registrationModel');
 const Winner = require('../models/winnersModel');
 
-exports.getDuplicatedList = catchAsync(async (req, res, next) => {
+exports.getDrawParams = catchAsync(async (req, res, next) => {
   const adminId = req.user._id;
-  const { commune, quota } = await Commune.findOne({
+  req.communeData = await Commune.findOne({
     admin: new ObjectId(adminId),
   });
+  next();
+});
+
+exports.getDuplicatedList = catchAsync(async (req, res, next) => {
+  const { commune, quota } = req.communeData;
   const { agePercentage } = req.body;
   const drawPool = await Registration.getDrawPool(commune, agePercentage);
   if (!drawPool) {
@@ -28,11 +33,7 @@ exports.getDuplicatedList = catchAsync(async (req, res, next) => {
 });
 
 exports.executeDraw = catchAsync(async (req, res, next) => {
-  const adminId = req.user._id;
-  const { commune, quota, reservePlace } = await Commune.findOne({
-    admin: new ObjectId(adminId),
-  });
-
+  const { commune, quota, reservePlace } = req.communeData;
   const { ageCount, agePercentage } = req.body;
   const { winner, remainingQuota, reserve, remainingReserve } =
     await Registration.performDraw({
@@ -42,11 +43,9 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
       agePercentage,
     });
   const numberOld = await Winner.countWinnersByAge(ageCount);
-  //console.log(reserve, remainingReserve, winner);
-  // if (remainingQuota === 0 && remainingReserve === 0) {
-  //   return next(new AppError('the Draw is finished', 404));
-  // }
-  // return { winner, remainingQuota, reserve, remainingReserve };
+  if (remainingQuota === 0 && remainingReserve === 0 && !reserve) {
+    return next(new AppError('the Draw is finished', 404));
+  }
   res.status(201).json({
     status: 'success',
     winners: winner,
@@ -56,57 +55,6 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
     oldPeople: numberOld,
   });
 });
-
-/*exports.executeDraw = catchAsync(async (req, res, next) => {
-  const registrationList = await Registration.aggregate([
-    {
-      $match: {},
-    },
-    {
-      $addFields: {
-        arrayField: {
-          $map: {
-            input: { $range: [0, '$coefficient'] }, // remove quotes around $coefficient
-            as: 'el',
-            in: '$$el',
-          },
-        },
-      },
-    },
-    {
-      $unwind: '$arrayField',
-    },
-    {
-      $project: {
-        arrayField: 0,
-        __v: 0,
-      },
-    },
-  ]).then(async (results) => {
-    // Create an array to hold the populated documents
-    let populatedResults = [];
-
-    // Use array iteration methods to populate the documents
-    await Promise.all(
-      results.map(async (result) => {
-        // Find the document in the original collection using its _id
-        let doc = await Registration.findById(result._id);
-
-        // Populate the desired fields
-        await doc.populate('user').execPopulate();
-
-        // Add the populated document to the array
-        populatedResults.push(doc);
-      }),
-    );
-  });
-  //const newList = await registrationList.populate('userId');
-  res.status(200).json({
-    status: 'success',
-    results: populatedResults.length,
-    data: populatedResults,
-  });
-});*/
 
 exports.createAlgorithm = catchAsync(async (req, res, next) => {
   const newAlgorithm = await Algorithm.create({
@@ -121,6 +69,9 @@ exports.createAlgorithm = catchAsync(async (req, res, next) => {
     permit: req.body.permit,
     penaltyCoefficient: req.body.penaltyCoefficient,
   });
+  if (!newAlgorithm) {
+    return next(new AppError('Algorithm has not been created', 404));
+  }
   res.status(201).json({
     status: 'success',
     data: newAlgorithm,
