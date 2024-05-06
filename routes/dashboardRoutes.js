@@ -27,15 +27,34 @@ router
     dashboardController.deleteAlgorithm,
   );
 
-router.use(dashboardController.getDrawParams);
 router.post(
   '/drawList',
+  dashboardController.getDrawParams,
   authController.restrictTo('admin'),
   dashboardController.getDuplicatedList,
 );
 router.post(
   '/draw',
+  dashboardController.getDrawParams,
   authController.restrictTo('admin'),
   dashboardController.executeDraw,
 );
+
+router
+  .route('/progressBar')
+  .get(dashboardController.getPhases)
+  .post(
+    authController.restrictTo('super-admin'),
+    dashboardController.createPhase,
+  );
+router
+  .route('/progressBar/:id')
+  .patch(
+    authController.restrictTo('super-admin'),
+    dashboardController.updatePhase,
+  )
+  .delete(
+    authController.restrictTo('super-admin'),
+    dashboardController.deletePhase,
+  );
 module.exports = router;

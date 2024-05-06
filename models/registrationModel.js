@@ -76,11 +76,13 @@ registrationSchema.statics.getDrawPool = async function (commune, age) {
 };
 
 registrationSchema.statics.createObject = async function (model, drawnUser) {
-  let object = await model.create({
+  const createdObject = await model.create({
     userId: drawnUser.user._id,
     mahrem: drawnUser.mahrem,
   });
-  object = await object
+  let object = await model
+    .findOne({ _id: createdObject._id })
+    .select('-_id -__v -createdAt')
     .populate({
       path: 'userId',
       select: 'firstName lastName birthdate',
@@ -89,11 +91,8 @@ registrationSchema.statics.createObject = async function (model, drawnUser) {
       path: 'mahrem',
       select: 'firstName lastName',
     })
-    .execPopulate();
+    .exec();
   object = object.toObject();
-  delete object.__v;
-  delete object._id;
-  delete object.createdAt;
   delete object.userId.birthdate;
   if (object.mahrem) {
     delete object.mahrem.age;

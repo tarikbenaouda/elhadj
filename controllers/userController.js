@@ -3,6 +3,7 @@ const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const APIFeatures = require('../utils/apiFeatures');
+const factory = require('./handlerFactory');
 
 const filterObj = (obj, ...allowedFields) => {
   const newObj = {};
@@ -13,7 +14,7 @@ const filterObj = (obj, ...allowedFields) => {
 };
 
 exports.getMe = (req, res, next) => {
-  req.params.id = req.user.id;
+  req.params.id = req.user._id;
   next();
 };
 
@@ -27,7 +28,6 @@ exports.updateMe = catchAsync(async (req, res, next) => {
       ),
     );
   }
-
   // 2) Filtered out unwanted fields names that are not allowed to be updated
   const filteredBody = filterObj(
     req.body,
@@ -36,13 +36,11 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     'passwordChangedAt',
     'email',
   );
-
   // 3) Update user document
   const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
     new: true,
     runValidators: true,
   });
-
   res.status(200).json({
     status: 'success',
     data: {
@@ -51,36 +49,8 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getAllUsers = catchAsync(async (req, res, next) => {
-  const features = new APIFeatures(User.find(), req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate();
-  const users = await features.query;
-
-  // SEND RESPONSE
-  res.status(200).json({
-    status: 'success',
-    results: users.length,
-    data: {
-      data: users,
-    },
-  });
-});
-
-exports.getUser = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
-  if (!user) {
-    return next(new AppError('No user found with that ID', 404));
-  }
-  res.status(200).json({
-    status: 'success',
-    data: {
-      user,
-    },
-  });
-});
+exports.getAllUsers = factory.getAll(User, 'User');
+exports.getUser = factory.getOne(User, 'User');
 
 exports.createUser = (req, res) => {
   res.status(500).json({
@@ -96,15 +66,4 @@ exports.updateUser = (req, res) => {
   });
 };
 
-exports.deleteUser = catchAsync(async (req, res, next) => {
-  const user = await User.findByIdAndDelete(req.params.id);
-
-  if (!user) {
-    return next(new AppError('No document found with that ID', 404));
-  }
-
-  res.status(204).json({
-    status: 'success',
-    data: null,
-  });
-});
+exports.deleteUser = factory.deleteOne(User, 'User');

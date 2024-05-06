@@ -5,6 +5,7 @@ const algoSchema = new mongoose.Schema(
     creatorId: {
       type: mongoose.Types.ObjectId,
       ref: 'User', // Reference to the User model
+      require: [true, 'An algorithm must be created by a user!'],
     },
     updaterId: {
       type: mongoose.Types.ObjectId,
@@ -50,20 +51,8 @@ const algoSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-    },
   },
   { timestamps: true },
-  {
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
-  },
 );
 
 const Algo = mongoose.model('Algo', algoSchema);

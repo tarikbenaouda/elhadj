@@ -3,97 +3,48 @@
 /* eslint-disable no-undef */
 /* eslint-disable prefer-const */
 const { ObjectId } = require('mongodb');
+const mongoose = require('mongoose');
 const Algorithm = require('../models/algorithmModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Commune = require('../models/communeModel');
 const Registration = require('../models/registrationModel');
 const Winner = require('../models/winnersModel');
+const ProgressBar = require('../models/progressBarModel');
+const factory = require('./handlerFactory');
 
-exports.getAlgorithm = catchAsync(async (req, res, next) => {
-  const algorithm = await Algorithm.find().sort({ updatedAt: -1 });
-  if (!algorithm) {
-    return next(new AppError('No Algorithm has been found found', 404));
-  }
-  res.status(200).json({
-    status: 'success',
-    data: algorithm,
-  });
-});
-exports.createAlgorithm = catchAsync(async (req, res, next) => {
-  const newAlgorithm = await Algorithm.create({
-    creatorId: req.user._id,
-    defaultCoefficient: req.body.defaultCoefficient,
-    ageLimitToApply: req.body.ageLimitToApply,
-    percentageOfQuota: req.body.percentageOfQuota,
-    include: req.body.include,
-    ageCoefficient: req.body.ageCoefficient,
-    registerCoefficient: req.body.registerCoefficient,
-    hadjLimitToApply: req.body.hadjLimitToApply,
-    permit: req.body.permit,
-    penaltyCoefficient: req.body.penaltyCoefficient,
-  });
-  if (!newAlgorithm) {
-    return next(new AppError('Algorithm has not been created', 404));
-  }
-  res.status(201).json({
-    status: 'success',
-    data: newAlgorithm,
-  });
-});
-exports.updateAlgorithm = catchAsync(async (req, res, next) => {
-  const algorithmId = req.params.id;
-  const updateAlgorithm = await Algorithm.findByIdAndUpdate(
-    algorithmId,
-    {
-      updaterId: req.user._id,
-      defaultCoefficient: req.body.defaultCoefficient,
-      ageLimitToApply: req.body.ageLimitToApply,
-      percentageOfQuota: req.body.percentageOfQuota,
-      include: req.body.include,
-      ageCoefficient: req.body.ageCoefficient,
-      registerCoefficient: req.body.registerCoefficient,
-      hadjLimitToApply: req.body.hadjLimitToApply,
-      permit: req.body.permit,
-      penaltyCoefficient: req.body.penaltyCoefficient,
-    },
-    { new: true }, // Return the updated document
-  );
-  if (!updateAlgorithm) {
-    return next(new AppError('Algorithm not found', 404));
-  }
-  res.status(200).json({
-    status: 'success',
-    data: updateAlgorithm,
-  });
-});
-
-exports.deleteAlgorithm = catchAsync(async (req, res, next) => {
-  const algorithmId = req.params.id;
-
-  const deletedAlgorithm = await Algorithm.findByIdAndDelete(algorithmId);
-
-  if (!deletedAlgorithm) {
-    return next(new AppError('Algorithm not found', 404));
-  }
-
-  res.status(204).json({
-    status: 'success',
-    data: null,
-  });
-});
+exports.getAlgorithm = factory.getAll(Algorithm);
+exports.createAlgorithm = factory.createOne(Algorithm, 'Algorithm', true);
+exports.updateAlgorithm = factory.updateOne(Algorithm, 'Algorithm', true);
+exports.deleteAlgorithm = factory.deleteOne(Algorithm, 'Algorithm');
 
 exports.getDrawParams = catchAsync(async (req, res, next) => {
   const adminId = req.user._id;
+  if (!adminId || !mongoose.Types.ObjectId.isValid(adminId)) {
+    return next(new AppError('Invalid admin ID.', 400));
+  }
   req.communeData = await Commune.findOne({
-    admin: new ObjectId(adminId),
+    admin: new mongoose.Types.ObjectId(adminId),
   });
+  if (!req.communeData) {
+    return next(new AppError('No commune found for this admin.', 404));
+  }
   next();
 });
 
 exports.getDuplicatedList = catchAsync(async (req, res, next) => {
-  const { commune, quota } = req.communeData;
+  const { commune } = req.communeData;
   const { agePercentage } = req.body;
+  if (!commune || !agePercentage) {
+    return next(new AppError('Missing required parameters.', 400));
+  }
+  if (
+    typeof agePercentage !== 'number' ||
+    agePercentage < 0 ||
+    agePercentage > 150
+  ) {
+    return next(new AppError('Invalid age percentage.', 400));
+  }
   const drawPool = await Registration.getDrawPool(commune, agePercentage);
   if (!drawPool) {
     return next(new AppError('Draw pool is empty.', 404));
@@ -108,6 +59,19 @@ exports.getDuplicatedList = catchAsync(async (req, res, next) => {
 exports.executeDraw = catchAsync(async (req, res, next) => {
   const { commune, quota, reservePlace } = req.communeData;
   const { ageCount, agePercentage } = req.body;
+  if (!commune || !quota || !reservePlace || !ageCount || !agePercentage) {
+    return next(new AppError('Missing required parameters.', 400));
+  }
+  if (
+    typeof agePercentage !== 'number' ||
+    agePercentage < 0 ||
+    agePercentage > 150
+  ) {
+    return next(new AppError('Invalid age percentage.', 400));
+  }
+  if (typeof ageCount !== 'number' || ageCount < 0) {
+    return next(new AppError('Invalid age count.', 400));
+  }
   const { winner, remainingQuota, reserve, remainingReserve } =
     await Registration.performDraw({
       quota,
@@ -128,3 +92,8 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
     oldPeople: numberOld,
   });
 });
+
+exports.getPhases = factory.getAll(ProgressBar);
+exports.createPhase = factory.createOne(ProgressBar, 'Phase');
+exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
+exports.deletePhase = factory.deleteOne(ProgressBar, 'Phase');
