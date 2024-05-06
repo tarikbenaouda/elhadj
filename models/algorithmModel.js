@@ -6,6 +6,10 @@ const algoSchema = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       ref: 'User', // Reference to the User model
     },
+    updaterId: {
+      type: mongoose.Types.ObjectId,
+      ref: 'User', // Reference to the User model
+    },
     defaultCoefficient: {
       type: Number,
       default: 1,

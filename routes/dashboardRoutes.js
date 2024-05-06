@@ -3,24 +3,14 @@ const authController = require('../controllers/authController');
 const dashboardController = require('../controllers/dashboardController');
 
 const router = express.Router();
-router.use(authController.protect, dashboardController.getDrawParams);
-router.post(
-  '/drawList',
-  authController.restrictTo('admin'),
-  dashboardController.getDuplicatedList,
-);
-router.post(
-  '/draw',
-  authController.restrictTo('admin'),
-  dashboardController.executeDraw,
-);
+router.use(authController.protect);
+
 router
-  //   .get(
-  //     '/algorithm',
-  //     authController.protect,
-  //     authController.restrictTo('admin', 'super-admin'),
-  //     dashboardController.getAlgorithm,
-  //   )
+  .get(
+    '/algorithm',
+    authController.restrictTo('admin', 'super-admin'),
+    dashboardController.getAlgorithm,
+  )
   .post(
     '/algorithm',
     authController.restrictTo('super-admin'),
@@ -37,4 +27,15 @@ router
     dashboardController.deleteAlgorithm,
   );
 
+router.use(dashboardController.getDrawParams);
+router.post(
+  '/drawList',
+  authController.restrictTo('admin'),
+  dashboardController.getDuplicatedList,
+);
+router.post(
+  '/draw',
+  authController.restrictTo('admin'),
+  dashboardController.executeDraw,
+);
 module.exports = router;
