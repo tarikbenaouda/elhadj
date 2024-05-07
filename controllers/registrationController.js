@@ -2,6 +2,7 @@ const Registration = require('../models/registrationModel');
 const RegistrationHistory = require('../models/registrationHistoryModel');
 const Algo = require('../models/algorithmModel');
 const User = require('../models/userModel');
+const Hadj = require('../models/hadjModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
@@ -23,7 +24,20 @@ exports.register = catchAsync(async (req, res, next) => {
     ageLimitToApply,
     ageCoefficient,
     registerCoefficient,
+    hadjLimitToApply,
   } = await Algo.findOne({});
+  let hadjYear;
+  if (hadjLimitToApply) hadjYear = await Hadj.getLastHadjYear(req.user._id);
+  if (
+    hadjYear &&
+    hadjYear >= new Date(Date.now()).getFullYear() - hadjLimitToApply
+  )
+    return next(
+      new AppError(
+        `It has been less than ${hadjLimitToApply} years since your last hadj!`,
+        400,
+      ),
+    );
   const registrations = await RegistrationHistory.getRegistrationsNumber(
     req.user._id,
   );
