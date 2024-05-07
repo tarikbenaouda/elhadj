@@ -86,17 +86,17 @@ registrationSchema.statics.createObject = async function (model, drawnUser) {
     .populate({
       path: 'userId',
       select: 'firstName lastName birthdate',
-    })
-    .populate({
-      path: 'mahrem',
-      select: 'firstName lastName',
-    })
-    .exec();
+    });
+  // .populate({
+  //   path: 'mahrem',
+  //   select: 'firstName lastName',
+  // })
+  // .exec();
   object = object.toObject();
   delete object.userId.birthdate;
-  if (object.mahrem) {
-    delete object.mahrem.age;
-  }
+  // if (object.mahrem) {
+  //   delete object.mahrem.age;
+  // }
   return object;
 };
 registrationSchema.statics.processDrawnUser = async function (
@@ -129,14 +129,14 @@ registrationSchema.statics.processDrawnUser = async function (
     return { object, remaining };
   } catch (err) {
     console.error('Error in processDrawnUser:', err);
-    // Handle the error...
-    throw err; // or return a default value
+    throw err;
   }
 };
 
 registrationSchema.statics.performDraw = async function (options) {
   try {
-    const { commune, quota, reservePlace, agePercentage } = options;
+    const { commune, quota, reservePlace, agePercentage, page, limit } =
+      options;
     let winner;
     let reserve;
     let drawPool;
@@ -162,6 +162,8 @@ registrationSchema.statics.performDraw = async function (options) {
     let remainingReserve =
       reservePlace !== undefined ? reservePlace - reserveCount : 0;
 
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
     if (remainingQuota > 0) {
       drawPool = await this.getDrawPool(commune, agePercentage);
       const result = await this.processDrawnUser(
@@ -172,11 +174,12 @@ registrationSchema.statics.performDraw = async function (options) {
         count,
         commune,
         Winner,
-        true,
       );
       winner = result.object;
+      drawPool.unshift(winner);
+      drawPool = drawPool.slice(startIndex, endIndex);
       remainingQuota = result.remaining;
-      return { winner, remainingQuota };
+      return { winner, remainingQuota, drawPool };
     }
     if (remainingReserve > 0) {
       drawPool = await this.getDrawPool(commune, agePercentage);
@@ -189,18 +192,17 @@ registrationSchema.statics.performDraw = async function (options) {
         reserveCount,
         commune,
         Reserve,
-        false,
       );
-
       reserve = result.object;
+      drawPool.unshift(reserve);
+      drawPool = drawPool.slice(startIndex, endIndex);
       remainingReserve = result.remaining;
-      return { reserve, remainingReserve, remainingQuota };
+      return { reserve, remainingReserve, remainingQuota, drawPool };
     }
-    return { winner, remainingQuota, reserve, remainingReserve };
+    return { winner, remainingQuota, reserve, remainingReserve, drawPool };
   } catch (err) {
     console.error('Error in performDraw:', err);
-    // Handle the error...
-    throw err; // or return a default value
+    throw err;
   }
 };
 
