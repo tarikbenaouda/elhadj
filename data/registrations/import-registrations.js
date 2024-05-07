@@ -1,8 +1,11 @@
+/* eslint-disable no-await-in-loop */
 const fs = require('fs');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const User = require('../../models/userModel');
 const Registration = require('../../models/registrationModel');
+const RegistrationHistory = require('../../models/registrationHistoryModel');
+const Algo = require('../../models/algorithmModel');
 
 dotenv.config({ path: './config.env' });
 const registrations = JSON.parse(
@@ -30,28 +33,50 @@ mongoose
   .catch((err) => {
     console.log(err.message);
   });
+const register = async (user, mahrem) => {
+  const {
+    defaultCoefficient,
+    ageLimitToApply,
+    ageCoefficient,
+    registerCoefficient,
+  } = await Algo.findOne({});
+  const registrationsNumber = await RegistrationHistory.getRegistrationsNumber(
+    user._id,
+  );
+  const coefficient =
+    defaultCoefficient +
+    registrationsNumber * registerCoefficient +
+    (user.age > ageLimitToApply ? ageCoefficient : 0);
 
+  try {
+    return await Registration.create({
+      userId: user._id,
+      coefficient,
+      mahrem,
+    });
+  } catch (err) {
+    console.log(err.message);
+  }
+};
 const importData = async () => {
   try {
-    let id;
+    let user;
     let mahrem;
     // eslint-disable-next-line no-plusplus
     for (let i = 0; i < 2764; i++) {
       console.log(registrations[i].nationalNumber);
-      // eslint-disable-next-line no-await-in-loop
-      id = await User.findOne({
+
+      user = await User.findOne({
         nationalNumber: String(registrations[i].nationalNumber),
       });
-      // eslint-disable-next-line no-await-in-loop
-      mahrem = await User.findOne({
-        nationalNumber: String(registrations[i].mahrem),
-      });
-      delete registrations[i].nationalNumber;
-      registrations[i].userId = id;
-      registrations[i].mahrem = mahrem ? mahrem._id : undefined;
-      // eslint-disable-next-line no-await-in-loop
-      await Registration.create(registrations[i]);
-      console.log(`Data successfully imported ${i} users :)`);
+
+      mahrem =
+        (await User.findOne({
+          nationalNumber: String(registrations[i].mahrem),
+        })) || undefined;
+
+      await register(user, mahrem);
+      console.log(`Data successfully imported ${i + 1} users :)`);
     }
     console.log('Data successfully imported :)');
   } catch (err) {

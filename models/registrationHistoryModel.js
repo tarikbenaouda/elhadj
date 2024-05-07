@@ -25,10 +25,9 @@ registrationHistorySchema.statics.getRegistrationsNumber = async function (
     .sort({ registrationDate: -1 }); // Sort by registrationDate in descending order to get the most recent
 
   if (!mostRecentSelectedRegistration) {
-    await mongoose
+    return await mongoose
       .model('RegistrationHistory')
       .countDocuments({ userId: userId });
-    return 0;
   }
 
   // Step 2: Find all registrations where selected = false and the registrationDate is after the most recent selected registration's registrationDate
