@@ -59,25 +59,20 @@ exports.getDuplicatedList = catchAsync(async (req, res, next) => {
 exports.executeDraw = catchAsync(async (req, res, next) => {
   const { commune, quota, reservePlace } = req.communeData;
   const { ageCount, agePercentage } = req.body;
-  if (!commune || !quota || !reservePlace || !ageCount || !agePercentage) {
+  if (!commune || !quota || !reservePlace || !ageCount) {
     return next(new AppError('Missing required parameters.', 400));
-  }
-  if (
-    typeof agePercentage !== 'number' ||
-    agePercentage < 0 ||
-    agePercentage > 150
-  ) {
-    return next(new AppError('Invalid age percentage.', 400));
   }
   if (typeof ageCount !== 'number' || ageCount < 0) {
     return next(new AppError('Invalid age count.', 400));
   }
-  const { winner, remainingQuota, reserve, remainingReserve } =
+  const { winner, remainingQuota, reserve, remainingReserve, drawPool } =
     await Registration.performDraw({
       quota,
       commune,
       reservePlace,
       agePercentage,
+      page: 1,
+      limit: 151,
     });
   const numberOld = await Winner.countWinnersByAge(ageCount);
   if (remainingQuota === 0 && remainingReserve === 0 && !reserve) {
@@ -90,6 +85,8 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
     reserves: reserve,
     remainingReservePlaces: remainingReserve,
     oldPeople: numberOld,
+    length: drawPool.length,
+    drawList: drawPool,
   });
 });
 
