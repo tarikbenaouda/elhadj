@@ -7,7 +7,13 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
 exports.getAllRegistrations = catchAsync(async (req, res, next) => {
-  const registrations = await Registration.find({});
+  const registrations = await Registration.find({})
+    .select('userId coefficient -_id')
+    .populate({
+      path: 'userId',
+      select: 'firstName lastName commune nationalNumber -_id ',
+    })
+    .lean();
   res.status(200).json({
     status: 'success',
     results: registrations.length,
