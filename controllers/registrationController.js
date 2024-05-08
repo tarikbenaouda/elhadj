@@ -32,6 +32,7 @@ exports.register = catchAsync(async (req, res, next) => {
     registerCoefficient,
     hadjLimitToApply,
   } = await Algo.findOne({});
+  // Verification of last hadj
   let hadjYear;
   if (hadjLimitToApply) hadjYear = await Hadj.getLastHadjYear(req.user._id);
   if (
@@ -47,20 +48,26 @@ exports.register = catchAsync(async (req, res, next) => {
   const registrations = await RegistrationHistory.getRegistrationsNumber(
     req.user._id,
   );
+  // Calcule of age coefficient
+  let ageCoef;
+  if (!ageLimitToApply) ageCoef = 0;
+  else ageCoef = req.user.age > ageLimitToApply ? ageCoefficient : 0;
   const coefficient =
-    defaultCoefficient +
-    registrations * registerCoefficient +
-    (req.user.age > ageLimitToApply ? ageCoefficient : 0);
+    defaultCoefficient + registrations * registerCoefficient + ageCoef;
   let mahrem;
   if (req.body.mahrem)
     mahrem = await User.findOne({ nationalNumber: req.body.mahrem });
-  if (req.user.sex === 'female' && !mahrem) {
-    return next(
-      new AppError('There is no user with this national number!', 404),
-    );
+  if (req.user.sex === 'female') {
+    if (!mahrem)
+      return next(
+        new AppError('There is no user with this national number!', 404),
+      );
+    if (mahrem.role !== 'user')
+      return next(new AppError('Mahrem must be a normal user!', 400));
+    if (mahrem.sex === 'female')
+      return next(new AppError('Mahrem can not be a female!', 400));
   }
-  if (req.user.sex === 'female' && mahrem.sex === 'female')
-    return next(new AppError('Mahrem can not be a female!', 400));
+
   try {
     const registration = await Registration.create({
       userId: req.user._id,
