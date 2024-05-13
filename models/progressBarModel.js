@@ -1,3 +1,5 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
 const mongoose = require('mongoose');
 const validator = require('validator');
 
@@ -24,9 +26,32 @@ const progressBarSchema = new mongoose.Schema(
       type: String,
       required: [true, 'A progress phase must have a description!'],
     },
+    status: {
+      type: String,
+      enum: ['completed', 'current', 'upcoming'],
+      default: 'upcoming',
+    },
   },
   { timestamps: true },
 );
+
+progressBarSchema.post(/^find/, async (docs, next) => {
+  const currentDate = new Date();
+  if (!Array.isArray(docs)) {
+    docs = [docs];
+  }
+  for (const phase of docs) {
+    if (currentDate < phase.startDate) {
+      phase.status = 'upcoming';
+    } else if (currentDate > phase.endDate) {
+      phase.status = 'completed';
+    } else {
+      phase.status = 'current';
+    }
+    await phase.save({ validateBeforeSave: false });
+  }
+  next();
+});
 
 const ProgressBar = mongoose.model('ProgressBar', progressBarSchema);
 module.exports = ProgressBar;

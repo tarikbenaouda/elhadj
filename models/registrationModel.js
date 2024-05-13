@@ -28,7 +28,11 @@ const registrationSchema = new mongoose.Schema({
   },
 });
 
-registrationSchema.statics.getExcludedWinners = async function (commune, age) {
+registrationSchema.statics.getExcludedWinners = async function (
+  commune,
+  startAge,
+  endAge,
+) {
   // Fetch winners and extract their user IDs
   const winners = await Winner.find().lean();
   const winnerUserIds = winners.map((winner) => winner.userId.toString());
@@ -39,12 +43,19 @@ registrationSchema.statics.getExcludedWinners = async function (commune, age) {
     commune: commune,
     _id: { $nin: excludedUserIds }, // Exclude winners
   };
-  if (age) {
-    const currentDate = new Date();
-    const ageDate = new Date(
-      currentDate.setFullYear(currentDate.getFullYear() - age),
-    );
-    match.birthdate = { $lte: ageDate }; // Only include users who are at least 'age' years old
+  if (startAge || endAge) {
+    const birthdateMatch = {};
+    if (startAge) {
+      const endAgeDate = new Date();
+      endAgeDate.setFullYear(endAgeDate.getFullYear() - startAge);
+      birthdateMatch.$lte = endAgeDate;
+    }
+    if (endAge) {
+      const startAgeDate = new Date();
+      startAgeDate.setFullYear(startAgeDate.getFullYear() - endAge);
+      birthdateMatch.$gte = startAgeDate;
+    }
+    match.birthdate = birthdateMatch; // Only include users who are within 'startAge' and 'endAge' years old
   }
   const registrations = await this.find().populate({
     path: 'userId',
@@ -55,16 +66,23 @@ registrationSchema.statics.getExcludedWinners = async function (commune, age) {
   return registrations;
 };
 
-registrationSchema.statics.getDrawPool = async function (commune, age) {
-  const registrations = await this.getExcludedWinners(commune, age);
-
+registrationSchema.statics.getDrawPool = async function (
+  commune,
+  startAge,
+  endAge,
+) {
+  const registrations = await this.getExcludedWinners(
+    commune,
+    startAge,
+    endAge,
+  );
   let drawPool = [];
   registrations.forEach((registration) => {
     if (registration.userId && registration.userId.commune === commune) {
       for (let i = 0; i < registration.coefficient; i++) {
         const insertAt = Math.floor(Math.random() * (drawPool.length + 1));
         const userToInsert = {
-          user: registration.userId,
+          userId: registration.userId,
           mahrem: registration.mahrem,
         };
         drawPool.splice(insertAt, 0, userToInsert);
@@ -77,7 +95,7 @@ registrationSchema.statics.getDrawPool = async function (commune, age) {
 
 registrationSchema.statics.createObject = async function (model, drawnUser) {
   const createdObject = await model.create({
-    userId: drawnUser.user._id,
+    userId: drawnUser.userId._id,
     mahrem: drawnUser.mahrem,
   });
   let object = await model
@@ -87,18 +105,9 @@ registrationSchema.statics.createObject = async function (model, drawnUser) {
       path: 'userId',
       select: 'firstName lastName birthdate',
     });
-  // .populate({
-  //   path: 'mahrem',
-  //   select: 'firstName lastName',
-  // })
-  // .exec();
-  object = object.toObject();
-  delete object.userId.birthdate;
-  // if (object.mahrem) {
-  //   delete object.mahrem.age;
-  // }
   return object;
 };
+
 registrationSchema.statics.processDrawnUser = async function (
   object,
   drawPool,
@@ -113,6 +122,7 @@ registrationSchema.statics.processDrawnUser = async function (
       const randomIndex = Math.floor(Math.random() * drawPool.length);
       const drawnUser = drawPool.splice(randomIndex, 1)[0]; // remove the user from the draw pool
       const isFemale = Boolean(drawnUser.mahrem);
+      console.log('drawnUser:', drawnUser);
       if ((isFemale && remaining >= 2) || (!isFemale && remaining >= 1)) {
         object = await this.createObject(model, drawnUser);
         count += isFemale === true ? 2 : 1;
@@ -120,9 +130,19 @@ registrationSchema.statics.processDrawnUser = async function (
         return { object, remaining };
       }
       if (isFemale && remaining === 1) {
+        const userExists = await Winner.checkUserInWinnerModel(
+          drawnUser.mahrem,
+        );
+        if (userExists) {
+          object = await this.createObject(model, drawnUser);
+          count += 1;
+          remaining = availablePlace - count;
+          return { object, remaining };
+        }
         drawPool.splice(randomIndex, 1);
-        console.log('picked a Female with a remaining place of 1');
-        // don't return, just continue to the next iteration
+        console.log(
+          'picked a Female with a remaining place of 1 but she is not in the Winner Model',
+        );
       }
     }
     // if we reach here, it means the draw pool is exhausted
@@ -133,57 +153,149 @@ registrationSchema.statics.processDrawnUser = async function (
   }
 };
 
-registrationSchema.statics.performDraw = async function (options) {
-  try {
-    const { commune, quota, reservePlace, agePercentage, page, limit } =
-      options;
-    let winner;
-    let reserve;
-    let drawPool;
-    const countAll = [
-      {
-        $group: {
-          _id: null,
-          count: {
-            $sum: {
-              $cond: [{ $ifNull: ['$mahrem', false] }, 2, 1],
-            },
+function getCountAll(startAge, endAge) {
+  let pipeline = [
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'user',
+      },
+    },
+    {
+      $unwind: '$user',
+    },
+    {
+      $addFields: {
+        age: {
+          $floor: {
+            $divide: [
+              { $subtract: [new Date(), '$user.birthdate'] },
+              31557600000,
+            ],
           },
         },
       },
-    ];
+    },
+  ];
 
-    let count = await Winner.aggregate(countAll);
-    count = count.length > 0 ? count[0].count : 0;
-    let remainingQuota = quota !== undefined ? quota - count : 0;
+  let ageCondition = {};
+  if (typeof startAge !== 'undefined') {
+    ageCondition.$gte = startAge;
+  }
+  if (typeof endAge !== 'undefined') {
+    ageCondition.$lte = endAge;
+  }
 
-    let reserveCount = await Reserve.aggregate(countAll);
-    reserveCount = reserveCount.length > 0 ? reserveCount[0].count : 0;
-    let remainingReserve =
-      reservePlace !== undefined ? reservePlace - reserveCount : 0;
+  if (Object.keys(ageCondition).length > 0) {
+    pipeline.push({
+      $match: {
+        age: ageCondition,
+      },
+    });
+  }
 
+  pipeline.push({
+    $group: {
+      _id: null,
+      count: {
+        $sum: {
+          $cond: [{ $ifNull: ['$mahrem', false] }, 2, 1],
+        },
+      },
+    },
+  });
+
+  return pipeline;
+}
+
+registrationSchema.statics.performDraw = async function (options) {
+  try {
+    const {
+      commune,
+      quota,
+      reservePlace,
+      oldQuotaAge,
+      placesForEachCategory,
+      ageCategories,
+      page,
+      limit,
+    } = options;
+    let winner;
+    let reserve;
+    let drawPool;
+    let remainingQuota;
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
-    if (remainingQuota > 0) {
-      drawPool = await this.getDrawPool(commune, agePercentage);
-      const result = await this.processDrawnUser(
-        winner,
-        drawPool,
-        remainingQuota,
-        quota,
-        count,
-        commune,
-        Winner,
-      );
-      winner = result.object;
-      drawPool.unshift(winner);
-      drawPool = drawPool.slice(startIndex, endIndex);
-      remainingQuota = result.remaining;
-      return { winner, remainingQuota, drawPool };
-    }
-    if (remainingReserve > 0) {
-      drawPool = await this.getDrawPool(commune, agePercentage);
 
+    if (!placesForEachCategory || !ageCategories) {
+      let count = await Winner.aggregate(getCountAll());
+      count = count.length > 0 ? count[0].count : 0;
+      remainingQuota = quota !== undefined ? Math.max(0, quota - count) : 0;
+
+      if (remainingQuota > 0) {
+        drawPool = await this.getDrawPool(commune, oldQuotaAge);
+        const result = await this.processDrawnUser(
+          winner,
+          drawPool,
+          remainingQuota,
+          quota,
+          count,
+          commune,
+          Winner,
+        );
+        winner = result.object;
+        drawPool.unshift(winner);
+        drawPool = drawPool.slice(startIndex, endIndex);
+        remainingQuota = result.remaining;
+        return { winner, remainingQuota, drawPool };
+      }
+    } else {
+      for (let i = 0; i < ageCategories.length; i++) {
+        // console.log('startAge:', ageCategories[i].startAge);
+        // console.log('endAge:', ageCategories[i].endAge);
+        const pipeline = getCountAll(
+          ageCategories[i].startAge,
+          ageCategories[i].endAge,
+        );
+        let count = await Winner.aggregate(pipeline);
+        count = count.length > 0 ? count[0].count : 0;
+        remainingQuota =
+          placesForEachCategory !== undefined
+            ? Math.max(0, placesForEachCategory[i] - count)
+            : 0;
+        if (remainingQuota > 0) {
+          drawPool = await this.getDrawPool(
+            commune,
+            ageCategories[i].startAge,
+            ageCategories[i].endAge,
+          );
+          const result = await this.processDrawnUser(
+            winner,
+            drawPool,
+            remainingQuota,
+            placesForEachCategory[i],
+            count,
+            commune,
+            Winner,
+          );
+          winner = result.object;
+          drawPool.unshift(winner);
+          drawPool = drawPool.slice(startIndex, endIndex);
+          remainingQuota = result.remaining;
+          return { winner, remainingQuota, drawPool };
+        }
+      }
+    }
+    let reserveCount = await Reserve.aggregate(getCountAll());
+    reserveCount = reserveCount.length > 0 ? reserveCount[0].count : 0;
+    let remainingReserve =
+      reservePlace !== undefined ? Math.max(0, reservePlace - reserveCount) : 0;
+
+    if (remainingReserve > 0) {
+      // (commune, oldQuotaAge, remainingReserve, reservePlace, reserveCount, Reserve)
+      drawPool = await this.getDrawPool(commune);
       const result = await this.processDrawnUser(
         reserve,
         drawPool,
@@ -197,9 +309,9 @@ registrationSchema.statics.performDraw = async function (options) {
       drawPool.unshift(reserve);
       drawPool = drawPool.slice(startIndex, endIndex);
       remainingReserve = result.remaining;
-      return { reserve, remainingReserve, remainingQuota, drawPool };
+      return { reserve, remainingReserve, drawPool };
     }
-    return { winner, remainingQuota, reserve, remainingReserve, drawPool };
+    return { winner, reserve, remainingQuota, remainingReserve, drawPool };
   } catch (err) {
     console.error('Error in performDraw:', err);
     throw err;

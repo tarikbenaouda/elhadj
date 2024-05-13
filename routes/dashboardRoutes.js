@@ -33,12 +33,14 @@ router.post(
   authController.restrictTo('admin'),
   dashboardController.getDuplicatedList,
 );
-router.post(
-  '/draw',
-  dashboardController.getDrawParams,
-  authController.restrictTo('admin'),
-  dashboardController.executeDraw,
-);
+router
+  .post(
+    '/draw',
+    dashboardController.getDrawParams,
+    authController.restrictTo('admin'),
+    dashboardController.executeDraw,
+  )
+  .get('/draw', dashboardController.getAllWinners);
 
 router
   .route('/progressBar')
