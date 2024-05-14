@@ -23,8 +23,21 @@ exports.getAllRegistrations = catchAsync(async (req, res, next) => {
   });
 });
 exports.register = catchAsync(async (req, res, next) => {
-  if (req.user.sex === 'female' && !req.body.mahrem)
-    return next(new AppError("You can't register without mahrem!", 400));
+  let mahrem;
+  if (req.user.sex === 'female') {
+    if (!req.body.mahrem)
+      return next(new AppError("You can't register without mahrem!", 400));
+
+    mahrem = await User.findOne({ nationalNumber: req.body.mahrem });
+    if (!mahrem)
+      return next(
+        new AppError('There is no user with this national number!', 404),
+      );
+    if (mahrem.sex === 'female')
+      return next(new AppError('Mahrem can not be a female!', 400));
+    if (mahrem.role !== 'user')
+      return next(new AppError('Mahrem must be a normal user!', 400));
+  }
   const {
     defaultCoefficient,
     ageLimitToApply,
@@ -54,19 +67,6 @@ exports.register = catchAsync(async (req, res, next) => {
   else ageCoef = req.user.age > ageLimitToApply ? ageCoefficient : 0;
   const coefficient =
     defaultCoefficient + registrations * registerCoefficient + ageCoef;
-  let mahrem;
-  if (req.body.mahrem)
-    mahrem = await User.findOne({ nationalNumber: req.body.mahrem });
-  if (req.user.sex === 'female') {
-    if (!mahrem)
-      return next(
-        new AppError('There is no user with this national number!', 404),
-      );
-    if (mahrem.role !== 'user')
-      return next(new AppError('Mahrem must be a normal user!', 400));
-    if (mahrem.sex === 'female')
-      return next(new AppError('Mahrem can not be a female!', 400));
-  }
 
   try {
     const registration = await Registration.create({
