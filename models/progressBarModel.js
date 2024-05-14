@@ -34,21 +34,40 @@ const progressBarSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
-
-progressBarSchema.post(/^find/, async (docs, next) => {
+progressBarSchema.pre('save', async function (next) {
   const currentDate = new Date();
-  if (!Array.isArray(docs)) {
-    docs = [docs];
-  }
-  for (const phase of docs) {
-    if (currentDate < phase.startDate) {
-      phase.status = 'upcoming';
-    } else if (currentDate > phase.endDate) {
-      phase.status = 'completed';
+  if (currentDate < this.startDate) {
+    this.status = 'upcoming';
+  } else if (currentDate > this.endDate) {
+    this.status = 'completed';
+  } else {
+    const currentPhases = await this.model('ProgressBar').find({
+      status: 'current',
+    });
+    if (currentPhases.length > 0) {
+      this.status = 'upcoming';
     } else {
-      phase.status = 'current';
+      this.status = 'current';
     }
-    await phase.save({ validateBeforeSave: false });
+  }
+  next();
+});
+progressBarSchema.pre(/^update/, async function (next) {
+  const update = this.getUpdate();
+  if (update.startDate || update.endDate) {
+    const currentDate = new Date();
+    if (currentDate < update.startDate) {
+      update.status = 'upcoming';
+    } else if (currentDate > update.endDate) {
+      update.status = 'completed';
+    } else {
+      const currentPhases = await this.model.find({ status: 'current' });
+      if (currentPhases.length > 0) {
+        update.status = 'upcoming';
+      } else {
+        update.status = 'current';
+      }
+    }
   }
   next();
 });

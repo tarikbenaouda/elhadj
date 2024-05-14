@@ -151,9 +151,11 @@ registrationSchema.statics.getDrawPool = async function (
       const ageFilter = {};
       if (startAge !== undefined) {
         ageFilter.$gte = startAge;
+        console.log('ageFilter:', ageFilter.$gte);
       }
       if (endAge !== undefined) {
         ageFilter.$lte = endAge;
+        console.log('ageFilter:', ageFilter.$lte);
       }
       pipeline.push({
         $match: {
@@ -306,7 +308,7 @@ registrationSchema.statics.performDraw = async function (options) {
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
 
-    if (!placesForEachCategory || !ageCategories) {
+    if (!placesForEachCategory && !ageCategories) {
       let count = await Winner.aggregate(getCountAll());
       count = count.length > 0 ? count[0].count : 0;
       remainingQuota = quota !== undefined ? Math.max(0, quota - count) : 0;
@@ -342,6 +344,8 @@ registrationSchema.statics.performDraw = async function (options) {
           placesForEachCategory !== undefined
             ? Math.max(0, placesForEachCategory[i] - count)
             : 0;
+        console.log('startAge:', ageCategories[i].startAge);
+        console.log('endAge:', ageCategories[i].endAge);
         if (remainingQuota > 0) {
           drawPool = await this.getDrawPool(
             commune,

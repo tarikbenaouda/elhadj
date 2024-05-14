@@ -51,22 +51,6 @@ exports.updateAlgorithm = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getAllWinners = catchAsync(async (req, res, next) => {
-  const winners = await Winner.find({})
-    .select('userId coefficient mahrem -_id')
-    .populate({
-      path: 'userId',
-      select: 'firstName lastName commune nationalNumber -_id ',
-    })
-    .lean();
-  res.status(200).json({
-    status: 'success',
-    results: winners.length,
-    data: {
-      winners,
-    },
-  });
-});
 exports.getDrawParams = catchAsync(async (req, res, next) => {
   const adminId = req.user._id;
   if (!adminId || !mongoose.Types.ObjectId.isValid(adminId)) {
@@ -130,6 +114,40 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
     //   length: drawPool.length,
     drawList: drawPool,
   });
+});
+exports.getAllWinners = catchAsync(async (req, res, next) => {
+  const winners = await Winner.find({})
+    .select('userId coefficient mahrem -_id')
+    .populate({
+      path: 'userId',
+      select: 'firstName lastName commune nationalNumber -_id ',
+    })
+    .lean();
+  res.status(200).json({
+    status: 'success',
+    results: winners.length,
+    data: {
+      winners,
+    },
+  });
+});
+
+exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
+  const phase = await ProgressBar.findOne({ status: 'current' });
+  console.log(phase);
+  if (!phase) {
+    return next(new AppError('No phase found with the current status', 404));
+  }
+  const currentDate = Date.now();
+  if (currentDate >= phase.startDate && currentDate <= phase.endDate) {
+    return next();
+  }
+  return next(
+    new AppError(
+      'This action is not allowed for the current phase status',
+      403,
+    ),
+  );
 });
 
 exports.getPhases = factory.getAll(ProgressBar);

@@ -11,6 +11,7 @@ const communeSchema = new mongoose.Schema({
     default: 0,
   },
   quota: Number,
+  oldPeopleQuota: Number,
   admin: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',
