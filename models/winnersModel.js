@@ -24,7 +24,10 @@ winnersSchema.statics.countWinnersByAge = async function (age) {
   );
   return winnersOfAge.length;
 };
-
+winnersSchema.statics.checkUserInWinnerModel = async function (userId) {
+  const user = await this.findOne({ userId: userId });
+  return Boolean(user);
+};
 const Winner = mongoose.model('Winner', winnersSchema);
 
 module.exports = Winner;

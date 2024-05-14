@@ -21,16 +21,15 @@ const algoSchema = new mongoose.Schema(
       default: null,
       min: 1,
     },
-    percentageOfQuota: {
+    oldQuotaAge: {
       type: Number,
       default: null,
-      min: 0,
-      max: 100,
     },
+
     ageCoefficient: {
       type: Number,
       default: 1,
-      min: 0,
+      min: 1,
     },
     registerCoefficient: {
       type: Number,
@@ -42,15 +41,13 @@ const algoSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    permit: {
-      type: Boolean,
-      default: true,
-    },
-    penaltyCoefficient: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
+    ageCategories: [
+      {
+        startAge: Number,
+        endAge: Number,
+        percentageOfQuota: Number,
+      },
+    ],
   },
   { timestamps: true },
 );

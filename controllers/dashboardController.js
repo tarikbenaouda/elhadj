@@ -15,17 +15,52 @@ const factory = require('./handlerFactory');
 
 exports.getAlgorithm = factory.getAll(Algorithm);
 exports.createAlgorithm = factory.createOne(Algorithm, 'Algorithm', true);
-exports.updateAlgorithm = factory.updateOne(Algorithm, 'Algorithm', true);
 exports.deleteAlgorithm = factory.deleteOne(Algorithm, 'Algorithm');
+exports.updateAlgorithm = catchAsync(async (req, res, next) => {
+  const algorithmId = req.params.id;
+  const {
+    oldStartAge,
+    newStartAge,
+    newEndAge,
+    newPercentageOfQuota,
+    ...otherFields
+  } = req.body;
+
+  const algorithm = await Algorithm.findOneAndUpdate(
+    { _id: algorithmId, 'ageCategories.startAge': oldStartAge },
+    {
+      $set: {
+        ...otherFields,
+        'ageCategories.$.startAge': newStartAge,
+        'ageCategories.$.endAge': newEndAge,
+        'ageCategories.$.percentageOfQuota': newPercentageOfQuota,
+      },
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!algorithm) {
+    return next(new AppError('No algorithm found with that ID', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      algorithm,
+    },
+  });
+});
 
 exports.getDrawParams = catchAsync(async (req, res, next) => {
   const adminId = req.user._id;
   if (!adminId || !mongoose.Types.ObjectId.isValid(adminId)) {
     return next(new AppError('Invalid admin ID.', 400));
   }
-  req.communeData = await Commune.findOne({
+  const commune = await Commune.findOne({
     admin: new mongoose.Types.ObjectId(adminId),
   });
+  await commune.calculatePlacesForEachCategory();
+  req.communeData = commune;
   if (!req.communeData) {
     return next(new AppError('No commune found for this admin.', 404));
   }
@@ -34,18 +69,10 @@ exports.getDrawParams = catchAsync(async (req, res, next) => {
 
 exports.getDuplicatedList = catchAsync(async (req, res, next) => {
   const { commune } = req.communeData;
-  const { agePercentage } = req.body;
-  if (!commune || !agePercentage) {
+  if (!commune) {
     return next(new AppError('Missing required parameters.', 400));
   }
-  if (
-    typeof agePercentage !== 'number' ||
-    agePercentage < 0 ||
-    agePercentage > 150
-  ) {
-    return next(new AppError('Invalid age percentage.', 400));
-  }
-  const drawPool = await Registration.getDrawPool(commune, agePercentage);
+  const drawPool = await Registration.getDrawPool(commune);
   if (!drawPool) {
     return next(new AppError('Draw pool is empty.', 404));
   }
@@ -57,24 +84,24 @@ exports.getDuplicatedList = catchAsync(async (req, res, next) => {
 });
 
 exports.executeDraw = catchAsync(async (req, res, next) => {
-  const { commune, quota, reservePlace } = req.communeData;
-  const { ageCount, agePercentage } = req.body;
-  if (!commune || !quota || !reservePlace || !ageCount) {
+  const { commune, quota, reservePlace, placesForEachCategory, ageCategories } =
+    req.communeData;
+
+  if (!commune || !quota || !reservePlace) {
     return next(new AppError('Missing required parameters.', 400));
-  }
-  if (typeof ageCount !== 'number' || ageCount < 0) {
-    return next(new AppError('Invalid age count.', 400));
   }
   const { winner, remainingQuota, reserve, remainingReserve, drawPool } =
     await Registration.performDraw({
       quota,
       commune,
       reservePlace,
-      agePercentage,
+      //oldQuotaAge,
+      placesForEachCategory,
+      ageCategories,
       page: 1,
       limit: 151,
     });
-  const numberOld = await Winner.countWinnersByAge(ageCount);
+  // const numberOld = await Winner.countWinnersByAge(ageCount);
   if (remainingQuota === 0 && remainingReserve === 0 && !reserve) {
     return next(new AppError('the Draw is finished', 404));
   }
@@ -84,10 +111,43 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
     remainingPlaces: remainingQuota,
     reserves: reserve,
     remainingReservePlaces: remainingReserve,
-    oldPeople: numberOld,
-    length: drawPool.length,
+    //   length: drawPool.length,
     drawList: drawPool,
   });
+});
+exports.getAllWinners = catchAsync(async (req, res, next) => {
+  const winners = await Winner.find({})
+    .select('userId coefficient mahrem -_id')
+    .populate({
+      path: 'userId',
+      select: 'firstName lastName commune nationalNumber -_id ',
+    })
+    .lean();
+  res.status(200).json({
+    status: 'success',
+    results: winners.length,
+    data: {
+      winners,
+    },
+  });
+});
+
+exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
+  const phase = await ProgressBar.findOne({ status: 'current' });
+  console.log(phase);
+  if (!phase) {
+    return next(new AppError('No phase found with the current status', 404));
+  }
+  const currentDate = Date.now();
+  if (currentDate >= phase.startDate && currentDate <= phase.endDate) {
+    return next();
+  }
+  return next(
+    new AppError(
+      'This action is not allowed for the current phase status',
+      403,
+    ),
+  );
 });
 
 exports.getPhases = factory.getAll(ProgressBar);
