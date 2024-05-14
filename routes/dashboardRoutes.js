@@ -29,24 +29,24 @@ router
 
 router.post(
   '/drawList',
-  dashboardController.getDrawParams,
+  dashboardController.checkCurrentPhase,
   authController.restrictTo('admin'),
+  dashboardController.getDrawParams,
   dashboardController.getDuplicatedList,
 );
 router.post(
   '/draw',
-  dashboardController.getDrawParams,
+  dashboardController.checkCurrentPhase,
   authController.restrictTo('admin'),
+  dashboardController.getDrawParams,
   dashboardController.executeDraw,
 );
+router.get('/winners', dashboardController.getAllWinners);
 
 router
   .route('/progressBar')
   .get(dashboardController.getPhases)
-  .post(
-    authController.restrictTo('super-admin'),
-    dashboardController.createPhase,
-  );
+  .post(authController.restrictTo('admin'), dashboardController.createPhase);
 router
   .route('/progressBar/:id')
   .patch(
