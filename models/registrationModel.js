@@ -28,69 +28,147 @@ const registrationSchema = new mongoose.Schema({
   },
 });
 
-registrationSchema.statics.getExcludedWinners = async function (
-  commune,
-  startAge,
-  endAge,
-) {
-  // Fetch winners and extract their user IDs
-  const winners = await Winner.find().lean();
-  const winnerUserIds = winners.map((winner) => winner.userId.toString());
-  const reserves = await Reserve.find().lean();
-  const reserveUserIds = reserves.map((reserve) => reserve.userId.toString());
-  const excludedUserIds = [...winnerUserIds, ...reserveUserIds];
-  const match = {
-    commune: commune,
-    _id: { $nin: excludedUserIds }, // Exclude winners
-  };
-  if (startAge || endAge) {
-    const birthdateMatch = {};
-    if (startAge) {
-      const endAgeDate = new Date();
-      endAgeDate.setFullYear(endAgeDate.getFullYear() - startAge);
-      birthdateMatch.$lte = endAgeDate;
-    }
-    if (endAge) {
-      const startAgeDate = new Date();
-      startAgeDate.setFullYear(startAgeDate.getFullYear() - endAge);
-      birthdateMatch.$gte = startAgeDate;
-    }
-    match.birthdate = birthdateMatch; // Only include users who are within 'startAge' and 'endAge' years old
-  }
-  const registrations = await this.find().populate({
-    path: 'userId',
-    select: 'firstName lastName commune wilaya birthdate  ',
-    match: match, // Include birthdate to calculate age
-  });
-
-  return registrations;
-};
+registrationSchema.index({ userId: 1 }, { unique: true });
 
 registrationSchema.statics.getDrawPool = async function (
   commune,
   startAge,
   endAge,
 ) {
-  const registrations = await this.getExcludedWinners(
-    commune,
-    startAge,
-    endAge,
-  );
-  let drawPool = [];
-  registrations.forEach((registration) => {
-    if (registration.userId && registration.userId.commune === commune) {
-      for (let i = 0; i < registration.coefficient; i++) {
-        const insertAt = Math.floor(Math.random() * (drawPool.length + 1));
-        const userToInsert = {
-          userId: registration.userId,
-          mahrem: registration.mahrem,
-        };
-        drawPool.splice(insertAt, 0, userToInsert);
-      }
-    }
-  });
+  try {
+    // Aggregation pipeline to construct the draw pool
+    const pipeline = [
+      {
+        $lookup: {
+          from: 'winners',
+          localField: 'userId',
+          foreignField: 'userId',
+          as: 'winner',
+        },
+      },
+      {
+        $lookup: {
+          from: 'reserves',
+          localField: 'userId',
+          foreignField: 'userId',
+          as: 'reserve',
+        },
+      },
+      {
+        $match: {
+          coefficient: { $gt: 0 }, // Filter by positive coefficient
+          winner: { $eq: [] }, // Exclude registrations that are winners
+          reserve: { $eq: [] }, // Exclude registrations that are reserves
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $unwind: '$user',
+      },
+      {
+        $match: {
+          'user.commune': commune, // Match commune from the User model
+        },
+      },
+      {
+        $addFields: {
+          age: {
+            $floor: {
+              $divide: [
+                { $subtract: [new Date(), '$user.birthdate'] },
+                31536000000,
+              ],
+            },
+          },
+          repeatCount: '$coefficient', // Add a field for repeat count based on coefficient
+        },
+      },
+      {
+        $project: {
+          userId: {
+            _id: '$user._id',
+            firstName: '$user.firstName',
+            lastName: '$user.lastName',
+            commune: '$user.commune',
+            wilaya: '$user.wilaya',
+            birthdate: '$user.birthdate',
+            age: '$age', // Include age in userId
+          },
+          mahrem: '$mahrem',
+          repeatCount: 1, // Include repeat count field
+        },
+      },
+      {
+        $group: {
+          _id: '$_id',
+          userId: { $first: '$userId' },
+          mahrem: { $first: '$mahrem' },
+          repeatCount: { $sum: '$repeatCount' },
+        },
+      },
+      {
+        $project: {
+          userId: 1,
+          mahrem: 1,
+          drawCount: { $range: [0, '$repeatCount'] },
+        },
+      },
+      {
+        $unwind: '$drawCount',
+      },
+      {
+        $project: {
+          userId: 1,
+          mahrem: 1,
+        },
+      },
+      {
+        $addFields: {
+          randomField: { $rand: {} }, // Add a random field
+        },
+      },
+      {
+        $sort: {
+          randomField: 1, // Sort by the random field
+        },
+      },
+      {
+        $project: {
+          randomField: 0, // Exclude randomField
+        },
+      },
+    ];
 
-  return drawPool;
+    // Age filter based on startAge and endAge
+    if (startAge !== undefined || endAge !== undefined) {
+      const ageFilter = {};
+      if (startAge !== undefined) {
+        ageFilter.$gte = startAge;
+      }
+      if (endAge !== undefined) {
+        ageFilter.$lte = endAge;
+      }
+      pipeline.push({
+        $match: {
+          'userId.age': ageFilter, // Match age from the User model
+        },
+      });
+    }
+    // Execute aggregation pipeline
+    const drawPool = await this.aggregate(pipeline);
+
+    return drawPool;
+  } catch (error) {
+    console.error('Error in getDrawPool:', error);
+    throw error;
+  }
 };
 
 registrationSchema.statics.createObject = async function (model, drawnUser) {
@@ -103,7 +181,7 @@ registrationSchema.statics.createObject = async function (model, drawnUser) {
     .select('-_id -__v -createdAt')
     .populate({
       path: 'userId',
-      select: 'firstName lastName birthdate',
+      select: 'firstName lastName birthdate commune wilaya',
     });
   return object;
 };
@@ -120,9 +198,8 @@ registrationSchema.statics.processDrawnUser = async function (
   try {
     while (drawPool.length > 0) {
       const randomIndex = Math.floor(Math.random() * drawPool.length);
-      const drawnUser = drawPool.splice(randomIndex, 1)[0]; // remove the user from the draw pool
+      const drawnUser = drawPool[randomIndex]; // remove the user from the draw pool
       const isFemale = Boolean(drawnUser.mahrem);
-      console.log('drawnUser:', drawnUser);
       if ((isFemale && remaining >= 2) || (!isFemale && remaining >= 1)) {
         object = await this.createObject(model, drawnUser);
         count += isFemale === true ? 2 : 1;
@@ -292,7 +369,6 @@ registrationSchema.statics.performDraw = async function (options) {
     reserveCount = reserveCount.length > 0 ? reserveCount[0].count : 0;
     let remainingReserve =
       reservePlace !== undefined ? Math.max(0, reservePlace - reserveCount) : 0;
-
     if (remainingReserve > 0) {
       // (commune, oldQuotaAge, remainingReserve, reservePlace, reserveCount, Reserve)
       drawPool = await this.getDrawPool(commune);

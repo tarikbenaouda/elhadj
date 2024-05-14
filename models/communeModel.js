@@ -19,19 +19,22 @@ const communeSchema = new mongoose.Schema({
 });
 
 communeSchema.method('calculatePlacesForEachCategory', async function () {
-  const { percentageOfQuota, ageCategories } = await Algorithm.findOne();
-  if (!percentageOfQuota || !ageCategories) {
+  const { ageCategories } = await Algorithm.findOne();
+  if (!ageCategories) {
     console.log('percentageOfQuota or ageCategories is undefined');
     return; // Skip the rest of the function if percentageOfQuota or ageCategories is undefined
   }
   let totalAssignedQuota = 0;
   let placesForEachCategory = [];
-  for (let i = 0; i < percentageOfQuota.length; i += 1) {
+  for (let i = 0; i < ageCategories.length; i += 1) {
     let places;
-    if (i === percentageOfQuota.length - 1) {
+    // If it's the last iteration, assign the rest of the quota
+    if (i === ageCategories.length - 1) {
       places = this.quota - totalAssignedQuota;
     } else {
-      places = Math.floor(this.quota * (percentageOfQuota[i] / 100));
+      places = Math.floor(
+        this.quota * (ageCategories[i].percentageOfQuota / 100),
+      );
       totalAssignedQuota += places;
     }
 

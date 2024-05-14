@@ -15,17 +15,25 @@ const factory = require('./handlerFactory');
 
 exports.getAlgorithm = factory.getAll(Algorithm);
 exports.createAlgorithm = factory.createOne(Algorithm, 'Algorithm', true);
-exports.updateAlgorithm = factory.updateOne(Algorithm, 'Algorithm', true);
 exports.deleteAlgorithm = factory.deleteOne(Algorithm, 'Algorithm');
-exports.modifyAgeCategory = catchAsync(async (req, res, next) => {
-  const { algorithmId, oldStartAge, newStartAge, newEndAge } = req.body;
+exports.updateAlgorithm = catchAsync(async (req, res, next) => {
+  const algorithmId = req.params.id;
+  const {
+    oldStartAge,
+    newStartAge,
+    newEndAge,
+    newPercentageOfQuota,
+    ...otherFields
+  } = req.body;
 
   const algorithm = await Algorithm.findOneAndUpdate(
     { _id: algorithmId, 'ageCategories.startAge': oldStartAge },
     {
       $set: {
+        ...otherFields,
         'ageCategories.$.startAge': newStartAge,
         'ageCategories.$.endAge': newEndAge,
+        'ageCategories.$.percentageOfQuota': newPercentageOfQuota,
       },
     },
     { new: true, runValidators: true },
@@ -45,7 +53,7 @@ exports.modifyAgeCategory = catchAsync(async (req, res, next) => {
 
 exports.getAllWinners = catchAsync(async (req, res, next) => {
   const winners = await Winner.find({})
-    .select('userId coefficient -_id')
+    .select('userId coefficient mahrem -_id')
     .populate({
       path: 'userId',
       select: 'firstName lastName commune nationalNumber -_id ',
@@ -92,9 +100,9 @@ exports.getDuplicatedList = catchAsync(async (req, res, next) => {
 });
 
 exports.executeDraw = catchAsync(async (req, res, next) => {
-  // ,  ,oldQuotaAge
   const { commune, quota, reservePlace, placesForEachCategory, ageCategories } =
     req.communeData;
+
   if (!commune || !quota || !reservePlace) {
     return next(new AppError('Missing required parameters.', 400));
   }

@@ -29,15 +29,15 @@ router
 
 router.post(
   '/drawList',
-  dashboardController.getDrawParams,
   authController.restrictTo('admin'),
+  dashboardController.getDrawParams,
   dashboardController.getDuplicatedList,
 );
 router
   .post(
     '/draw',
-    dashboardController.getDrawParams,
     authController.restrictTo('admin'),
+    dashboardController.getDrawParams,
     dashboardController.executeDraw,
   )
   .get('/draw', dashboardController.getAllWinners);

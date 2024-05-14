@@ -25,16 +25,7 @@ const algoSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
-    oldQuotaPlaces: {
-      type: Number,
-      default: null,
-    },
-    percentageOfQuota: {
-      type: [Number],
-      default: null,
-      min: 0,
-      max: 100,
-    },
+
     ageCoefficient: {
       type: Number,
       default: 1,
@@ -54,6 +45,7 @@ const algoSchema = new mongoose.Schema(
       {
         startAge: Number,
         endAge: Number,
+        percentageOfQuota: Number,
       },
     ],
   },
