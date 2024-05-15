@@ -11,6 +11,7 @@ const Commune = require('../models/communeModel');
 const Registration = require('../models/registrationModel');
 const Winner = require('../models/winnersModel');
 const ProgressBar = require('../models/progressBarModel');
+const MedicalRecord = require('../models/medicalRecordModel');
 const factory = require('./handlerFactory');
 
 exports.getAlgorithm = factory.getAll(Algorithm);
@@ -51,7 +52,7 @@ exports.updateAlgorithm = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getDrawParams = catchAsync(async (req, res, next) => {
+exports.getUserParams = catchAsync(async (req, res, next) => {
   const adminId = req.user._id;
   if (!adminId || !mongoose.Types.ObjectId.isValid(adminId)) {
     return next(new AppError('Invalid admin ID.', 400));
@@ -59,7 +60,9 @@ exports.getDrawParams = catchAsync(async (req, res, next) => {
   const commune = await Commune.findOne({
     admin: new mongoose.Types.ObjectId(adminId),
   });
-  await commune.calculatePlacesForEachCategory();
+  if (req.user.role === 'admin') {
+    await commune.calculatePlacesForEachCategory();
+  }
   req.communeData = commune;
   if (!req.communeData) {
     return next(new AppError('No commune found for this admin.', 404));
@@ -115,12 +118,20 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
     drawList: drawPool,
   });
 });
+
 exports.getAllWinners = catchAsync(async (req, res, next) => {
-  const winners = await Winner.find({})
+  const { commune } = req.communeData;
+  console.log('commune', commune);
+  const winners = await Winner.find()
     .select('userId coefficient mahrem -_id')
     .populate({
       path: 'userId',
+      match: { commune: commune }, // filter based on commune
       select: 'firstName lastName commune nationalNumber -_id ',
+    })
+    .populate({
+      path: 'mahrem',
+      select: 'firstName lastName -_id',
     })
     .lean();
   res.status(200).json({
@@ -134,7 +145,7 @@ exports.getAllWinners = catchAsync(async (req, res, next) => {
 
 exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
   const phase = await ProgressBar.findOne({ status: 'current' });
-  console.log(phase);
+  console.log('phase', phase);
   if (!phase) {
     return next(new AppError('No phase found with the current status', 404));
   }
@@ -154,3 +165,12 @@ exports.getPhases = factory.getAll(ProgressBar);
 exports.createPhase = factory.createOne(ProgressBar, 'Phase');
 exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
 exports.deletePhase = factory.deleteOne(ProgressBar, 'Phase');
+exports.addMedicalRecord = factory.createOne(
+  MedicalRecord,
+  'Medical Record',
+  true,
+);
+exports.updateMedicalRecord = factory.updateOne(
+  MedicalRecord,
+  'Medical Record',
+);
