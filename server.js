@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const { job } = require('./utils/ProgressBar');
 
 // process.on('uncaughtException', (err) => {
 //   console.log(err.name, err.message);
@@ -27,6 +28,7 @@ mongoose
   });
 const app = require('./app');
 
+job.start();
 const port = process.env.PORT;
 const server = app.listen(port, () => {
   console.log(`App running on port : ${port}`);

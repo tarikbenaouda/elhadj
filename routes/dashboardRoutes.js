@@ -4,7 +4,7 @@ const dashboardController = require('../controllers/dashboardController');
 
 const router = express.Router();
 router.use(authController.protect);
-
+// adjust admin role for progress bar
 router
   .get(
     '/algorithm',
@@ -31,22 +31,29 @@ router.post(
   '/drawList',
   dashboardController.checkCurrentPhase,
   authController.restrictTo('admin'),
-  dashboardController.getDrawParams,
+  dashboardController.getUserParams,
   dashboardController.getDuplicatedList,
 );
 router.post(
   '/draw',
   dashboardController.checkCurrentPhase,
   authController.restrictTo('admin'),
-  dashboardController.getDrawParams,
+  dashboardController.getUserParams,
   dashboardController.executeDraw,
 );
-router.get('/winners', dashboardController.getAllWinners);
+router.get(
+  '/winners',
+  dashboardController.getUserParams,
+  dashboardController.getAllWinners,
+);
 
 router
   .route('/progressBar')
   .get(dashboardController.getPhases)
-  .post(authController.restrictTo('admin'), dashboardController.createPhase);
+  .post(
+    authController.restrictTo('super-admin'),
+    dashboardController.createPhase,
+  );
 router
   .route('/progressBar/:id')
   .patch(
@@ -56,5 +63,19 @@ router
   .delete(
     authController.restrictTo('super-admin'),
     dashboardController.deletePhase,
+  );
+
+router
+  .post(
+    '/medicalAppointment',
+    //dashboardController.checkCurrentPhase,
+    authController.restrictTo('doctor'),
+    dashboardController.addMedicalRecord,
+  )
+  .patch(
+    '/medicalAppointment/:id',
+    //dashboardController.checkCurrentPhase,
+    authController.restrictTo('doctor'),
+    dashboardController.updateMedicalRecord,
   );
 module.exports = router;

@@ -11,8 +11,11 @@ const communeSchema = new mongoose.Schema({
     default: 0,
   },
   quota: Number,
-  oldPeopleQuota: Number,
-  admin: {
+  oldPeopleQuota: {
+    type: Number,
+    default: 0,
+  },
+  manager: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',
     default: null,
@@ -23,13 +26,12 @@ communeSchema.method('calculatePlacesForEachCategory', async function () {
   const { ageCategories } = await Algorithm.findOne();
   if (!ageCategories) {
     console.log('percentageOfQuota or ageCategories is undefined');
-    return; // Skip the rest of the function if percentageOfQuota or ageCategories is undefined
+    return;
   }
   let totalAssignedQuota = 0;
   let placesForEachCategory = [];
   for (let i = 0; i < ageCategories.length; i += 1) {
     let places;
-    // If it's the last iteration, assign the rest of the quota
     if (i === ageCategories.length - 1) {
       places = this.quota - totalAssignedQuota;
     } else {
