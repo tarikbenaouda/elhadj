@@ -36,7 +36,7 @@ router.post(
 );
 router.post(
   '/draw',
-  dashboardController.checkCurrentPhase,
+  //dashboardController.checkCurrentPhase,
   authController.restrictTo('admin'),
   dashboardController.getUserParams,
   dashboardController.executeDraw,
