@@ -23,9 +23,7 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     results: winners.length,
-    data: {
-      winners,
-    },
+    data: winners,
   });
 });
 exports.pay = catchAsync(async (req, res, next) => {
