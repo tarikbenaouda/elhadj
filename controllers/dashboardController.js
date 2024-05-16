@@ -2,7 +2,6 @@
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-undef */
 /* eslint-disable prefer-const */
-const { ObjectId } = require('mongodb');
 const mongoose = require('mongoose');
 const Algorithm = require('../models/algorithmModel');
 const catchAsync = require('../utils/catchAsync');
@@ -134,7 +133,6 @@ exports.getAllWinners = catchAsync(async (req, res, next) => {
 
 exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
   const phase = await ProgressBar.findOne({ status: 'current' });
-  console.log(phase);
   if (!phase) {
     return next(new AppError('No phase found with the current status', 404));
   }

@@ -1,0 +1,66 @@
+[
+  {
+    "post_code": "22000",
+    "title": "Sidi Bel Abbes",
+    "commune": "Sidi Bel-Abbes",
+    "wilaya": "Sidi Bel Abbes",
+    "postman": [565349270, 929815843]
+  },
+  {
+    "post_code": "22016",
+    "title": "Sidi Bel Abbes El Wiam",
+    "commune": "Sidi Bel-Abbes",
+    "wilaya": "Sidi Bel Abbes",
+    "postman": [502915008]
+  },
+  {
+    "post_code": "22037",
+    "title": "Ain Trid",
+    "commune": "Ain Thrid",
+    "wilaya": "Sidi Bel Abbes",
+    "postman": [747929721]
+  },
+  {
+    "post_code": "22067",
+    "title": "Telagh Mokdad Med",
+    "commune": "Telagh",
+    "wilaya": "Sidi Bel Abbes",
+    "postman": [361879490]
+  },
+  {
+    "post_code": "22073",
+    "title": "Berkane Ben Yagoub",
+    "commune": "Telagh",
+    "wilaya": "Sidi Bel Abbes",
+    "postman": [729450595]
+  },
+  {
+    "post_code": "48000",
+    "title": "Relizane",
+    "commune": "Relizane",
+    "wilaya": "Relizane",
+    "postman": [182185536, 599689263]
+  },
+  {
+    "post_code": "48076",
+    "title": "Boubakeur",
+    "commune": "Relizane",
+    "wilaya": "Relizane",
+    "postman": [129424478]
+  },
+  {
+    "post_code": "48042",
+    "title": "Benziane",
+    "commune": "Oued-Rhiou",
+    "wilaya": "Relizane",
+    "postman": [835681592]
+  },
+
+  {
+    "post_code": "48072",
+    "title": "Tliouanet",
+    "commune": "Yellel",
+    "wilaya": "Relizane",
+    "postman": [323749641]
+  }
+]
