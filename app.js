@@ -4,12 +4,12 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
-const hpp = require('hpp');
 const cors = require('cors');
 
 const userRouter = require('./routes/userRoutes');
 const registrationRouter = require('./routes/registrationRoutes');
 const dashboardRouter = require('./routes/dashboardRoutes');
+const paymentRouter = require('./routes/paymentRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 
@@ -65,6 +65,7 @@ app.use('/api/v1/users', userRouter);
 app.use('/api/v1/dashboard', dashboardRouter);
 
 app.use('/api/v1/registrations', registrationRouter);
+app.use('/api/v1/payments', paymentRouter);
 // For all unhandled routes
 app.all('*', (req, res, next) => {
   const err = new AppError(`Can't find ${req.originalUrl} on this server`, 404);
