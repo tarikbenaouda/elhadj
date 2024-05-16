@@ -63,6 +63,7 @@ exports.getUserParams = catchAsync(async (req, res, next) => {
   if (req.user.role === 'admin') {
     await commune.calculatePlacesForEachCategory();
   }
+  console.log('commune', commune);
   req.communeData = commune;
   if (!req.communeData) {
     return next(new AppError('No commune found for this admin.', 404));
@@ -99,8 +100,8 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
       commune,
       reservePlace,
       //oldQuotaAge,
-      placesForEachCategory,
-      ageCategories,
+      //placesForEachCategory,
+      //ageCategories,
       page: 1,
       limit: 151,
     });
@@ -145,7 +146,6 @@ exports.getAllWinners = catchAsync(async (req, res, next) => {
 
 exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
   const phase = await ProgressBar.findOne({ status: 'current' });
-  console.log('phase', phase);
   if (!phase) {
     return next(new AppError('No phase found with the current status', 404));
   }
@@ -165,6 +165,15 @@ exports.getPhases = factory.getAll(ProgressBar);
 exports.createPhase = factory.createOne(ProgressBar, 'Phase');
 exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
 exports.deletePhase = factory.deleteOne(ProgressBar, 'Phase');
+
+exports.assignWinnerToMedicalAppointment = catchAsync(
+  async (req, res, next) => {
+    const { winnerId, doctorId, date, location } = req.body;
+    const winner = await Winner.findByIdAndUpdate(winnerId, {
+      medicalAppointment: { doctorId, date, location },
+    });
+  },
+);
 exports.addMedicalRecord = factory.createOne(
   MedicalRecord,
   'Medical Record',

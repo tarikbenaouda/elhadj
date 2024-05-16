@@ -15,6 +15,18 @@ const winnersSchema = new mongoose.Schema({
     type: Date,
     default: Date.now(),
   },
+  medicalAppointment: {
+    doctorId: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+    },
+    date: {
+      type: Date,
+    },
+    location: {
+      type: String,
+    },
+  },
 });
 
 winnersSchema.statics.countWinnersByAge = async function (age) {
