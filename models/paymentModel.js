@@ -51,7 +51,6 @@ paymentSchema.statics.getPaymentsByCommune = async function (commune) {
     {
       $project: {
         payerInfo: 0, // Exclude payerInfo object
-        createdAt: 0, // Exclude createdAt field
         _id: 0, // Exclude _id field
         __v: 0, // Exclude __v field
       },
