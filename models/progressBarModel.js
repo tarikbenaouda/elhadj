@@ -22,10 +22,6 @@ const progressBarSchema = new mongoose.Schema(
       trim: true,
       validate: [validator.isDate, 'Please provide a valid endDate!'],
     },
-    description: {
-      type: String,
-      required: [true, 'A progress phase must have a description!'],
-    },
     status: {
       type: String,
       enum: ['completed', 'current', 'upcoming'],

@@ -6,6 +6,10 @@ const medicalRecordSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'A medical Record must have a doctor!'],
   },
+  updaterId: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+  },
   patient: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',
@@ -24,6 +28,15 @@ const medicalRecordSchema = new mongoose.Schema({
   accepted: {
     type: Boolean,
     default: false,
+  },
+  chronicDisease: {
+    type: [String],
+    default: null,
+  },
+  bloodType: {
+    type: String,
+    enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+    required: [true, 'A medical Record must have a blood type!'],
   },
 });
 

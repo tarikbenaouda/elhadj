@@ -1,6 +1,7 @@
 /* eslint-disable prefer-const */
 const mongoose = require('mongoose');
 const Algorithm = require('./algorithmModel');
+const User = require('./userModel');
 
 const communeSchema = new mongoose.Schema({
   commune: String,
@@ -18,7 +19,6 @@ const communeSchema = new mongoose.Schema({
   manager: {
     type: mongoose.Schema.ObjectId,
     ref: 'User',
-    default: null,
   },
 });
 
@@ -46,6 +46,5 @@ communeSchema.method('calculatePlacesForEachCategory', async function () {
   this.placesForEachCategory = placesForEachCategory;
   this.ageCategories = ageCategories;
 });
-
 const Commune = mongoose.model('Commune', communeSchema);
 module.exports = Commune;

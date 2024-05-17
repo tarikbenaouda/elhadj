@@ -22,9 +22,10 @@ router.patch('/updateMe', userController.updateMe);
 router.use(authController.restrictTo('super-admin', 'admin'));
 
 router.route('/').get(userController.getAllUsers);
+router.post('/search', userController.searchUserByNin);
 router
   .route('/:id')
   .get(userController.getUser)
-  .delete(userController.deleteUser);
+  .patch(userController.updateUser);
 
 module.exports = router;

@@ -29,14 +29,14 @@ router
 
 router.post(
   '/drawList',
-  dashboardController.checkCurrentPhase,
+  authController.checkCurrentPhase,
   authController.restrictTo('admin'),
   dashboardController.getUserParams,
   dashboardController.getDuplicatedList,
 );
 router.post(
   '/draw',
-  //dashboardController.checkCurrentPhase,
+  authController.checkCurrentPhase,
   authController.restrictTo('admin'),
   dashboardController.getUserParams,
   dashboardController.executeDraw,
@@ -47,35 +47,17 @@ router.get(
   dashboardController.getAllWinners,
 );
 
-router
-  .route('/progressBar')
-  .get(dashboardController.getPhases)
-  .post(
-    authController.restrictTo('super-admin'),
-    dashboardController.createPhase,
-  );
-router
-  .route('/progressBar/:id')
-  .patch(
-    authController.restrictTo('super-admin'),
-    dashboardController.updatePhase,
-  )
-  .delete(
-    authController.restrictTo('super-admin'),
-    dashboardController.deletePhase,
-  );
+router.route('/progressBar').get(dashboardController.getPhases);
+router.patch(
+  '/progressBar/:id',
+  authController.restrictTo('super-admin'),
+  dashboardController.updatePhase,
+);
 
-router
-  .post(
-    '/medicalAppointment',
-    //dashboardController.checkCurrentPhase,
-    authController.restrictTo('doctor'),
-    dashboardController.addMedicalRecord,
-  )
-  .patch(
-    '/medicalAppointment/:id',
-    //dashboardController.checkCurrentPhase,
-    authController.restrictTo('doctor'),
-    dashboardController.updateMedicalRecord,
-  );
+router.post(
+  '/commune',
+  authController.restrictTo('admin'),
+  dashboardController.addCommuneParams,
+);
+
 module.exports = router;

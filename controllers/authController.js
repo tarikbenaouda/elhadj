@@ -5,6 +5,7 @@ const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
+const ProgressBar = require('../models/progressBarModel');
 
 const signToken = (id, exp) =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -172,4 +173,21 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   await user.save();
 
   createSendToken(user, 200, res);
+});
+
+exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
+  const phase = await ProgressBar.findOne({ status: 'current' });
+  if (!phase) {
+    return next(new AppError('No phase found with the current status', 404));
+  }
+  const currentDate = Date.now();
+  if (currentDate >= phase.startDate && currentDate <= phase.endDate) {
+    return next();
+  }
+  return next(
+    new AppError(
+      'This action is not allowed for the current phase status',
+      403,
+    ),
+  );
 });
