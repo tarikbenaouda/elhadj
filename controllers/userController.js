@@ -28,13 +28,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     );
   }
   // 2) Filtered out unwanted fields names that are not allowed to be updated
-  const filteredBody = filterObj(
-    req.body,
-    'firstName',
-    'lastName',
-    'passwordChangedAt',
-    'email',
-  );
+  const filteredBody = filterObj(req.body, 'passwordChangedAt');
   // 3) Update user document
   const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
     new: true,
@@ -49,20 +43,42 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllUsers = factory.getAll(User, 'User');
+// exports.getAllUsers = catchAsync(async (req, res, next) => {
+//   let filter = {};
+//   if (req.query.role) {
+//     filter.role = req.query.role.split(',');
+//   }
+//   const users = await User.find(filter);
+//   res.status(200).json({
+//     status: 'success',
+//     results: users.length,
+//     data: {
+//       users,
+//     },
+//   });
+// });
 exports.getUser = factory.getOne(User, 'User');
+exports.searchUserByNin = factory.searchByNin(User, 'User');
+exports.updateUser = catchAsync(async (req, res, next) => {
+  const doc = await User.findByIdAndUpdate(
+    req.params.id,
+    {
+      role: req.body.role,
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
 
-exports.createUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined!',
+  if (!doc) {
+    return next(new AppError('No user found with that ID', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      data: doc,
+    },
   });
-};
-
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined!',
-  });
-};
-
-exports.deleteUser = factory.deleteOne(User, 'User');
+});

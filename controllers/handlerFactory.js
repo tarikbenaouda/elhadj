@@ -1,6 +1,7 @@
-const catchAsync = require('../utils/catchAsync');
+//const { Model } = require('mongoose');
 const AppError = require('../utils/appError');
 const APIFeatures = require('../utils/apiFeatures');
+const catchAsync = require('../utils/catchAsync');
 
 exports.deleteOne = (Model, name) =>
   catchAsync(async (req, res, next) => {
@@ -59,6 +60,7 @@ exports.createOne = (Model, name, creatorId = null) =>
 
 exports.getAll = (Model) =>
   catchAsync(async (req, res, next) => {
+    console.log(req.query.role);
     const features = new APIFeatures(Model.find(), req.query)
       .filter()
       .sort()
@@ -86,6 +88,22 @@ exports.getOne = (Model, name, popOptions) =>
     const doc = await query;
     if (!doc) {
       return next(new AppError(`No ${name} found with that ID`, 404));
+    }
+    res.status(200).json({
+      status: 'success',
+      data: {
+        data: doc,
+      },
+    });
+  });
+
+exports.searchByNin = (Model, name) =>
+  catchAsync(async (req, res, next) => {
+    const doc = await Model.findOne({
+      nationalNumber: req.body.nationalNumber,
+    });
+    if (!doc) {
+      return next(new AppError('No user found with that NIN', 404));
     }
     res.status(200).json({
       status: 'success',

@@ -10,7 +10,6 @@ const Commune = require('../models/communeModel');
 const Registration = require('../models/registrationModel');
 const Winner = require('../models/winnersModel');
 const ProgressBar = require('../models/progressBarModel');
-const MedicalRecord = require('../models/medicalRecordModel');
 const factory = require('./handlerFactory');
 
 exports.getAlgorithm = factory.getAll(Algorithm);
@@ -59,10 +58,9 @@ exports.getUserParams = catchAsync(async (req, res, next) => {
   const commune = await Commune.findOne({
     admin: new mongoose.Types.ObjectId(adminId),
   });
-  if (req.user.role === 'admin') {
+  if (req.user.role === 'manager') {
     await commune.calculatePlacesForEachCategory();
   }
-  console.log('commune', commune);
   req.communeData = commune;
   if (!req.communeData) {
     return next(new AppError('No commune found for this admin.', 404));
@@ -121,7 +119,6 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
 
 exports.getAllWinners = catchAsync(async (req, res, next) => {
   const { commune } = req.communeData;
-  console.log('commune', commune);
   const winners = await Winner.find()
     .select('userId coefficient mahrem -_id')
     .populate({
@@ -143,42 +140,30 @@ exports.getAllWinners = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
-  const phase = await ProgressBar.findOne({ status: 'current' });
-  if (!phase) {
-    return next(new AppError('No phase found with the current status', 404));
-  }
-  const currentDate = Date.now();
-  if (currentDate >= phase.startDate && currentDate <= phase.endDate) {
-    return next();
-  }
-  return next(
-    new AppError(
-      'This action is not allowed for the current phase status',
-      403,
-    ),
-  );
-});
-
 exports.getPhases = factory.getAll(ProgressBar);
-exports.createPhase = factory.createOne(ProgressBar, 'Phase');
 exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
-exports.deletePhase = factory.deleteOne(ProgressBar, 'Phase');
 
-exports.assignWinnerToMedicalAppointment = catchAsync(
-  async (req, res, next) => {
-    const { winnerId, doctorId, date, location } = req.body;
-    const winner = await Winner.findByIdAndUpdate(winnerId, {
-      medicalAppointment: { doctorId, date, location },
-    });
-  },
-);
-exports.addMedicalRecord = factory.createOne(
-  MedicalRecord,
-  'Medical Record',
-  true,
-);
-exports.updateMedicalRecord = factory.updateOne(
-  MedicalRecord,
-  'Medical Record',
-);
+exports.addCommuneParams = catchAsync(async (req, res, next) => {
+  const { commune, quota, reservePlace, oldPeopleQuota, manager } = req.body;
+  if (!commune || !quota || !reservePlace) {
+    return next(new AppError('Missing required parameters.', 400));
+  }
+  const updatedCommune = await Commune.findOneAndUpdate(
+    { commune: commune },
+    {
+      $set: {
+        quota: quota,
+        reservePlace: reservePlace,
+        oldPeopleQuota: oldPeopleQuota,
+        manager: manager,
+      },
+    },
+    { new: true, runValidators: true },
+  );
+  res.status(201).json({
+    status: 'success',
+    data: {
+      updatedCommune,
+    },
+  });
+});
