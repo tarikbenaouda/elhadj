@@ -31,7 +31,7 @@ exports.pay = catchAsync(async (req, res, next) => {
     return next(new AppError('National number and amount are required', 400));
   const userId = await User.findOne({
     nationalNumber: req.body.nationalNumber,
-  }).select('_id firstName lastName email birthDate commune');
+  }).select('_id firstName lastName email birthdate commune');
   const isWinner = await Winner.checkUserInWinnerModel(userId._id);
   if (!isWinner || userId.commune !== req.user.commune)
     return next(new AppError('User not found', 404));
@@ -43,24 +43,26 @@ exports.pay = catchAsync(async (req, res, next) => {
       return next(new AppError('User already refunded', 400));
   }
   if (req.body.confirm) {
-    const post = await Post.findOne({ postman: req.user._id });
-    const payment = await Payment.create({
-      postman: req.user._id,
-      amount: req.body.amount,
-      userId: userId._id,
-      post: post._id,
-    });
+    const post = await Post.findOne({ postman: req.user._id }).lean();
+    const payment = (
+      await Payment.create({
+        postman: req.user._id,
+        amount: req.body.amount,
+        userId: userId._id,
+        post: post._id,
+      })
+    ).toObject();
     const user = await User.findById(userId._id)
       .select('firstName lastName email birthdate nationalNumber paiment')
       .lean();
     user.payment = 'paid';
     user.paymentDetails = {
-      ...payment.toObject(),
+      ...payment,
       _id: undefined,
       __v: undefined,
     };
     user.paymentDetails.postInfo = {
-      ...post.toObject(),
+      ...post,
       postman: undefined,
       _id: undefined,
       __v: undefined,
@@ -72,9 +74,7 @@ exports.pay = catchAsync(async (req, res, next) => {
   }
   res.status(200).json({
     status: 'success',
-    data: {
-      userId,
-    },
+    data: userId,
   });
 });
 
