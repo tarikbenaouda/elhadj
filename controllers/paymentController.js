@@ -60,3 +60,23 @@ exports.pay = catchAsync(async (req, res, next) => {
     },
   });
 });
+exports.refund = catchAsync(async (req, res, next) => {
+  if (!req.body.nationalNumber)
+    return next(new AppError('National number is required', 400));
+  const userId = await User.findOne({
+    nationalNumber: req.body.nationalNumber,
+  }).select('_id commune');
+  const isWinner = await Winner.checkUserInWinnerModel(userId._id);
+  if (!isWinner || userId.commune !== req.user.commune)
+    return next(new AppError('User not found', 404));
+  const payment = await Payment.findOne({ userId: userId._id });
+  if (!payment) return next(new AppError('User not paid', 400));
+  if (payment.refunded)
+    return next(new AppError('Payment already refunded', 400));
+  payment.refunded = true;
+  await payment.save();
+  res.status(200).json({
+    status: 'success',
+    data: payment,
+  });
+});
