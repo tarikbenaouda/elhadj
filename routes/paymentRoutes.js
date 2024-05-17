@@ -8,6 +8,7 @@ router.use(authController.restrictTo('postman'));
 
 router
   .get('/', paymentController.getAllPayments)
-  .post('/', paymentController.pay);
+  .post('/', paymentController.pay)
+  .patch('/', paymentController.refund);
 
 module.exports = router;
