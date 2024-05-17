@@ -52,6 +52,8 @@ winnersSchema.statics.getWinnersByCommune = async function (commune) {
         mahrem: '$mahrem',
         firstName: '$winnerInfo.firstName',
         lastName: '$winnerInfo.lastName',
+        email: '$winnerInfo.email',
+        birthdate: '$winnerInfo.birthdate',
         nationalNumber: '$winnerInfo.nationalNumber',
       },
     },
