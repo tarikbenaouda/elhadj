@@ -69,10 +69,9 @@ paymentSchema.statics.getPaymentsByCommune = async function (commune) {
     },
     {
       $project: {
-        createdAt: 0, // Exclude createdAt field
-        post: 0, // Exclude post field
+        'postInfo.postman': 0, // Exclude createdAt field
         'postInfo._id': 0, // Exclude _id field
-        __v: 0, // Exclude __v field
+        'postInfo.__v': 0, // Exclude __v field
       },
     },
   ]);
