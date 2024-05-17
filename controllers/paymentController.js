@@ -43,14 +43,26 @@ exports.pay = catchAsync(async (req, res, next) => {
       postman: req.user._id,
       amount: req.body.amount,
       userId: userId._id,
-      post,
+      post: post._id,
     });
-    await payment.populate('post');
+    const user = await User.findById(userId._id)
+      .select('firstName lastName email birthdate nationalNumber paiment')
+      .lean();
+    user.payment = 'paid';
+    user.paymentDetails = {
+      ...payment.toObject(),
+      _id: undefined,
+      __v: undefined,
+    };
+    user.paymentDetails.postInfo = {
+      ...post.toObject(),
+      postman: undefined,
+      _id: undefined,
+      __v: undefined,
+    };
     return res.status(201).json({
       status: 'success',
-      data: {
-        payment,
-      },
+      data: user,
     });
   }
   res.status(200).json({
@@ -60,6 +72,8 @@ exports.pay = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+// Refund function
 exports.refund = catchAsync(async (req, res, next) => {
   if (!req.body.nationalNumber)
     return next(new AppError('National number is required', 400));
