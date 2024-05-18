@@ -58,15 +58,17 @@ exports.createOne = (Model, name, creatorId = null) =>
     });
   });
 
-exports.getAll = (Model) =>
+exports.getAll = (Model, populateOptions) =>
   catchAsync(async (req, res, next) => {
-    console.log(req.query.role);
-    const features = new APIFeatures(Model.find(), req.query)
+    let query = Model.find();
+    if (populateOptions) {
+      query = query.populate(populateOptions);
+    }
+    const features = new APIFeatures(query, req.query)
       .filter()
       .sort()
       .limitFields()
       .paginate();
-    // const doc = await features.query.explain();
     const doc = await features.query;
     res.status(200).json({
       status: 'success',
@@ -76,7 +78,6 @@ exports.getAll = (Model) =>
       },
     });
   });
-
 exports.getOne = (Model, name, popOptions) =>
   catchAsync(async (req, res, next) => {
     let query = Model.findById(req.params.id);
