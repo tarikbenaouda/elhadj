@@ -4,10 +4,10 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const factory = require('./handlerFactory');
 
-const filterObj = (obj, ...allowedFields) => {
+const filterObj = (obj, ...disallowedFields) => {
   const newObj = {};
   Object.keys(obj).forEach((el) => {
-    if (allowedFields.includes(el)) newObj[el] = obj[el];
+    if (!disallowedFields.includes(el)) newObj[el] = obj[el];
   });
   return newObj;
 };
@@ -28,9 +28,15 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     );
   }
   // 2) Filtered out unwanted fields names that are not allowed to be updated
-  const filteredBody = filterObj(req.body, 'passwordChangedAt');
+  const filteredBody = filterObj(
+    req.body,
+    'role',
+    'password',
+    'passwordConfirm',
+    'passwordChangedAt',
+  );
   // 3) Update user document
-  const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
+  const updatedUser = await User.findByIdAndUpdate(req.user._id, filteredBody, {
     new: true,
     runValidators: true,
   });

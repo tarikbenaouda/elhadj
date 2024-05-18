@@ -49,18 +49,8 @@ paymentSchema.statics.getPaymentsByCommune = async function (commune) {
       },
     },
     {
-      $addFields: {
-        userId: '$payerInfo._id',
-        mahrem: '$mahrem',
-        firstName: '$payerInfo.firstName',
-        lastName: '$payerInfo.lastName',
-        email: '$payerInfo.email',
-      },
-    },
-    {
       $project: {
         payerInfo: 0, // Exclude payerInfo object
-        createdAt: 0, // Exclude createdAt field
         _id: 0, // Exclude _id field
         __v: 0, // Exclude __v field
       },
@@ -71,6 +61,16 @@ paymentSchema.statics.getPaymentsByCommune = async function (commune) {
         localField: 'post',
         foreignField: '_id',
         as: 'postInfo',
+      },
+    },
+    {
+      $unwind: '$postInfo',
+    },
+    {
+      $project: {
+        'postInfo.postman': 0, // Exclude createdAt field
+        'postInfo._id': 0, // Exclude _id field
+        'postInfo.__v': 0, // Exclude __v field
       },
     },
   ]);

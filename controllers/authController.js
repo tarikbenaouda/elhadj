@@ -2,6 +2,7 @@
 const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
+const Winner = require('../models/winnersModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
@@ -160,7 +161,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
 exports.updatePassword = catchAsync(async (req, res, next) => {
   // 1) Get user from collection
-  const user = await User.findById(req.user.id).select('+password');
+  const user = await User.findById(req.user._id).select('+password');
 
   // 2) Check if POSTed current password is correct
   if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
@@ -174,6 +175,7 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 
   createSendToken(user, 200, res);
 });
+
 
 exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
   const phase = await ProgressBar.findOne({ status: 'current' });
@@ -190,4 +192,14 @@ exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
       403,
     ),
   );
+  
+exports.restrictToWinnerOrMahrem = catchAsync(async (req, res, next) => {
+  const winner = await Winner.findOne({
+    $or: [{ userId: req.user._id }, { mahrem: req.user._id }],
+  });
+  if (!winner)
+    return next(
+      new AppError('You are not allowed to perform this action', 403),
+    );
+  next();
 });

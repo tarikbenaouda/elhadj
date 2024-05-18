@@ -23,9 +23,7 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: 'success',
     results: winners.length,
-    data: {
-      winners,
-    },
+    data: winners,
   });
 });
 exports.pay = catchAsync(async (req, res, next) => {
@@ -33,32 +31,71 @@ exports.pay = catchAsync(async (req, res, next) => {
     return next(new AppError('National number and amount are required', 400));
   const userId = await User.findOne({
     nationalNumber: req.body.nationalNumber,
-  }).select('_id firstName lastName email birthDate commune');
-  const isWinner = await Winner.checkUserInWinnerModel(userId);
+  }).select('_id firstName lastName email birthdate commune');
+  const isWinner = await Winner.checkUserInWinnerModel(userId._id);
   if (!isWinner || userId.commune !== req.user.commune)
     return next(new AppError('User not found', 404));
-  const alreadyPaid = await Payment.findOne({ userId });
-  if (alreadyPaid) return next(new AppError('User already paid', 400));
+  const alreadyPaid = await Payment.findOne({ userId: userId._id });
+  if (alreadyPaid) {
+    if (alreadyPaid.refunded === false)
+      return next(new AppError('User already paid', 400));
+    if (alreadyPaid.refunded === true)
+      return next(new AppError('User already refunded', 400));
+  }
   if (req.body.confirm) {
-    const post = await Post.findOne({ postman: req.user._id });
-    const payment = await Payment.create({
-      postman: req.user._id,
-      amount: req.body.amount,
-      userId,
-      post,
-    });
-    await payment.populate('post');
+    const post = await Post.findOne({ postman: req.user._id }).lean();
+    const payment = (
+      await Payment.create({
+        postman: req.user._id,
+        amount: req.body.amount,
+        userId: userId._id,
+        post: post._id,
+      })
+    ).toObject();
+    const user = await User.findById(userId._id)
+      .select('firstName lastName email birthdate nationalNumber paiment')
+      .lean();
+    user.payment = 'paid';
+    user.paymentDetails = {
+      ...payment,
+      _id: undefined,
+      __v: undefined,
+    };
+    user.paymentDetails.postInfo = {
+      ...post,
+      postman: undefined,
+      _id: undefined,
+      __v: undefined,
+    };
     return res.status(201).json({
       status: 'success',
-      data: {
-        payment,
-      },
+      data: user,
     });
   }
   res.status(200).json({
     status: 'success',
-    data: {
-      userId,
-    },
+    data: userId,
+  });
+});
+
+// Refund function
+exports.refund = catchAsync(async (req, res, next) => {
+  if (!req.body.nationalNumber)
+    return next(new AppError('National number is required', 400));
+  const userId = await User.findOne({
+    nationalNumber: req.body.nationalNumber,
+  }).select('_id commune');
+  const isWinner = await Winner.checkUserInWinnerModel(userId._id);
+  if (!isWinner || userId.commune !== req.user.commune)
+    return next(new AppError('User not found', 404));
+  const payment = await Payment.findOne({ userId: userId._id });
+  if (!payment) return next(new AppError('User not paid', 400));
+  if (payment.refunded)
+    return next(new AppError('Payment already refunded', 400));
+  payment.refunded = true;
+  await payment.save();
+  res.status(200).json({
+    status: 'success',
+    data: payment,
   });
 });
