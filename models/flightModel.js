@@ -5,11 +5,12 @@ const PassengerRefSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
+    unique: true,
   },
 });
 
-const FlightSchema = new mongoose.Schema({
-  flightNumber: { type: String, required: true },
+const flightSchema = new mongoose.Schema({
+  flightNumber: { type: String, required: true, unique: true },
   airline: { type: String, default: 'Air Algeria' },
   departure: {
     airport: { type: String, required: true },
@@ -26,16 +27,16 @@ const FlightSchema = new mongoose.Schema({
   passengers: [PassengerRefSchema],
 });
 
-FlightSchema.virtual('emptySeats').get(function () {
+flightSchema.virtual('emptySeats').get(function () {
   return this.aircraft.seats - this.passengers.length;
 });
 
 // Ensure virtual fields are included when converting to JSON or Object
-FlightSchema.set('toObject', { virtuals: true });
-FlightSchema.set('toJSON', { virtuals: true });
+flightSchema.set('toObject', { virtuals: true });
+flightSchema.set('toJSON', { virtuals: true });
 
-FlightSchema.index({ flightNumber: 1, 'passengers.user': 1 }, { unique: true });
+// flightSchema.index({ flightNumber: 1, 'passengers.user': 1 }, { unique: true });
 
-const Flight = mongoose.model('Flight', FlightSchema);
+const Flight = mongoose.model('Flight', flightSchema);
 
 module.exports = Flight;
