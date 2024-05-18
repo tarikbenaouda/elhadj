@@ -34,10 +34,7 @@ FlightSchema.virtual('emptySeats').get(function () {
 FlightSchema.set('toObject', { virtuals: true });
 FlightSchema.set('toJSON', { virtuals: true });
 
-FlightSchema.index(
-  { flightNumber: 1, 'passengers.user': 1, 'passengers.seat': 1 },
-  { unique: true },
-);
+FlightSchema.index({ flightNumber: 1, 'passengers.user': 1 }, { unique: true });
 
 const Flight = mongoose.model('Flight', FlightSchema);
 
