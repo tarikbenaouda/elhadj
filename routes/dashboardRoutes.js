@@ -1,10 +1,10 @@
 const express = require('express');
 const authController = require('../controllers/authController');
 const dashboardController = require('../controllers/dashboardController');
-
+//const router = express.Router({ mergeParams: true });
 const router = express.Router();
 router.use(authController.protect);
-
+// adjust admin role for progress bar
 router
   .get(
     '/algorithm',
@@ -29,32 +29,43 @@ router
 
 router.post(
   '/drawList',
-  dashboardController.checkCurrentPhase,
+  // authController.checkCurrentPhase,
   authController.restrictTo('admin'),
-  dashboardController.getDrawParams,
+  dashboardController.getUserParams,
   dashboardController.getDuplicatedList,
 );
 router.post(
   '/draw',
-  dashboardController.checkCurrentPhase,
+  // authController.checkCurrentPhase,
   authController.restrictTo('admin'),
-  dashboardController.getDrawParams,
+  dashboardController.getUserParams,
   dashboardController.executeDraw,
 );
-router.get('/winners', dashboardController.getAllWinners);
+router.get(
+  '/winners',
+  dashboardController.getUserParams,
+  dashboardController.getAllWinners,
+);
+
+router.route('/progressBar').get(dashboardController.getPhases);
+router.patch(
+  '/progressBar/:id',
+  authController.restrictTo('super-admin'),
+  dashboardController.updatePhase,
+);
 
 router
-  .route('/progressBar')
-  .get(dashboardController.getPhases)
-  .post(authController.restrictTo('admin'), dashboardController.createPhase);
+  .route('/communeParams')
+  .get(dashboardController.getAllCommune)
+  .post(
+    authController.restrictTo('admin'),
+    dashboardController.addCommuneParams,
+  );
 router
-  .route('/progressBar/:id')
-  .patch(
+  .route('/wilayaParams')
+  .get(dashboardController.getAllWilaya)
+  .post(
     authController.restrictTo('super-admin'),
-    dashboardController.updatePhase,
-  )
-  .delete(
-    authController.restrictTo('super-admin'),
-    dashboardController.deletePhase,
+    dashboardController.addWilayaParams,
   );
 module.exports = router;

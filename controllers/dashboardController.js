@@ -10,6 +10,7 @@ const Commune = require('../models/communeModel');
 const Registration = require('../models/registrationModel');
 const Winner = require('../models/winnersModel');
 const ProgressBar = require('../models/progressBarModel');
+const Wilaya = require('../models/wilayaModel');
 const factory = require('./handlerFactory');
 
 exports.getAlgorithm = factory.getAll(Algorithm);
@@ -50,13 +51,13 @@ exports.updateAlgorithm = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getDrawParams = catchAsync(async (req, res, next) => {
-  const adminId = req.user._id;
-  if (!adminId || !mongoose.Types.ObjectId.isValid(adminId)) {
+exports.getUserParams = catchAsync(async (req, res, next) => {
+  const managerId = req.user._id;
+  if (!managerId || !mongoose.Types.ObjectId.isValid(managerId)) {
     return next(new AppError('Invalid admin ID.', 400));
   }
   const commune = await Commune.findOne({
-    admin: new mongoose.Types.ObjectId(adminId),
+    manager: new mongoose.Types.ObjectId(managerId),
   });
   await commune.calculatePlacesForEachCategory();
   req.communeData = commune;
@@ -95,8 +96,8 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
       commune,
       reservePlace,
       //oldQuotaAge,
-      placesForEachCategory,
-      ageCategories,
+      //placesForEachCategory,
+      //ageCategories,
       page: 1,
       limit: 151,
     });
@@ -114,12 +115,19 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
     drawList: drawPool,
   });
 });
+
 exports.getAllWinners = catchAsync(async (req, res, next) => {
-  const winners = await Winner.find({})
+  const { commune } = req.communeData;
+  const winners = await Winner.find()
     .select('userId coefficient mahrem -_id')
     .populate({
       path: 'userId',
+      match: { commune: commune }, // filter based on commune
       select: 'firstName lastName commune nationalNumber -_id ',
+    })
+    .populate({
+      path: 'mahrem',
+      select: 'firstName lastName -_id',
     })
     .lean();
   res.status(200).json({
@@ -131,24 +139,68 @@ exports.getAllWinners = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
-  const phase = await ProgressBar.findOne({ status: 'current' });
-  if (!phase) {
-    return next(new AppError('No phase found with the current status', 404));
+exports.getPhases = factory.getAll(ProgressBar);
+exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
+
+exports.addCommuneParams = catchAsync(async (req, res, next) => {
+  const { commune, quota, reservePlace, oldPeopleQuota, manager } = req.body;
+  if (!commune) {
+    return next(new AppError('Missing Commune parameters.', 400));
   }
-  const currentDate = Date.now();
-  if (currentDate >= phase.startDate && currentDate <= phase.endDate) {
-    return next();
-  }
-  return next(
-    new AppError(
-      'This action is not allowed for the current phase status',
-      403,
-    ),
+  const updatedCommune = await Commune.findOneAndUpdate(
+    { commune: commune },
+    {
+      $set: {
+        quota: quota,
+        reservePlace: reservePlace,
+        oldPeopleQuota: oldPeopleQuota,
+        manager: manager,
+      },
+    },
+    { new: true, runValidators: true },
   );
+  res.status(201).json({
+    status: 'success',
+    data: {
+      updatedCommune,
+    },
+  });
+});
+exports.getAllCommune = factory.getAll(Commune, {
+  path: 'manager',
+  select: 'firstName lastName  -_id',
 });
 
-exports.getPhases = factory.getAll(ProgressBar);
-exports.createPhase = factory.createOne(ProgressBar, 'Phase');
-exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
-exports.deletePhase = factory.deleteOne(ProgressBar, 'Phase');
+exports.addWilayaParams = catchAsync(async (req, res, next) => {
+  const { name, population, quota, admin, oldPeopleQuota } = req.body;
+  if (!name) {
+    return next(new AppError('Missing Wilaya name.', 400));
+  }
+  const updatedWilaya = await Wilaya.findOneAndUpdate(
+    {
+      name: name,
+    },
+    {
+      $set: {
+        population: population,
+        quota: quota,
+        admin: admin,
+        oldPeopleQuota: oldPeopleQuota,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
+  res.status(201).json({
+    status: 'success',
+    data: {
+      updatedWilaya,
+    },
+  });
+});
+exports.getAllWilaya = factory.getAll(Wilaya, {
+  path: 'admin',
+  select: 'firstName lastName  -_id',
+});

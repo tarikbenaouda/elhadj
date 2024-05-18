@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 class APIFeatures {
   constructor(query, queryString) {
     this.query = query;
@@ -11,9 +12,29 @@ class APIFeatures {
 
     // 1B) Advanced filtering
     let queryStr = JSON.stringify(queryObj);
+
+    // Replace comparison operators with MongoDB comparison operators
     queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
 
-    this.query = this.query.find(JSON.parse(queryStr));
+    // Parse the JSON string back to an object
+    let queryObjFinal = JSON.parse(queryStr);
+
+    // Check each field in the query object
+    // eslint-disable-next-line no-restricted-syntax
+    for (let field in queryObjFinal) {
+      // If the value of the field is a string containing commas
+      if (
+        typeof queryObjFinal[field] === 'string' &&
+        queryObjFinal[field].includes(',')
+      ) {
+        // Split the string by commas to get an array of values
+        let values = queryObjFinal[field].split(',');
+        // Replace the string with an object containing the $in operator and the array of values
+        queryObjFinal[field] = { $in: values };
+      }
+    }
+
+    this.query = this.query.find(queryObjFinal);
 
     return this;
   }
@@ -22,8 +43,6 @@ class APIFeatures {
     if (this.queryString.sort) {
       const sortBy = this.queryString.sort.split(',').join(' ');
       this.query = this.query.sort(sortBy);
-    } else {
-      this.query = this.query.sort('-createdAt');
     }
 
     return this;
