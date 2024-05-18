@@ -176,7 +176,6 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
-
 exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
   const phase = await ProgressBar.findOne({ status: 'current' });
   if (!phase) {
@@ -192,7 +191,8 @@ exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
       403,
     ),
   );
-  
+});
+
 exports.restrictToWinnerOrMahrem = catchAsync(async (req, res, next) => {
   const winner = await Winner.findOne({
     $or: [{ userId: req.user._id }, { mahrem: req.user._id }],
@@ -202,4 +202,4 @@ exports.restrictToWinnerOrMahrem = catchAsync(async (req, res, next) => {
       new AppError('You are not allowed to perform this action', 403),
     );
   next();
-});
+}); // Add closing parenthesis here
