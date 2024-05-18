@@ -10,6 +10,7 @@ const Commune = require('../models/communeModel');
 const Registration = require('../models/registrationModel');
 const Winner = require('../models/winnersModel');
 const ProgressBar = require('../models/progressBarModel');
+const Wilaya = require('../models/wilayaModel');
 const factory = require('./handlerFactory');
 
 exports.getAlgorithm = factory.getAll(Algorithm);
@@ -51,16 +52,14 @@ exports.updateAlgorithm = catchAsync(async (req, res, next) => {
 });
 
 exports.getUserParams = catchAsync(async (req, res, next) => {
-  const adminId = req.user._id;
-  if (!adminId || !mongoose.Types.ObjectId.isValid(adminId)) {
+  const managerId = req.user._id;
+  if (!managerId || !mongoose.Types.ObjectId.isValid(managerId)) {
     return next(new AppError('Invalid admin ID.', 400));
   }
   const commune = await Commune.findOne({
-    admin: new mongoose.Types.ObjectId(adminId),
+    manager: new mongoose.Types.ObjectId(managerId),
   });
-  if (req.user.role === 'manager') {
-    await commune.calculatePlacesForEachCategory();
-  }
+  await commune.calculatePlacesForEachCategory();
   req.communeData = commune;
   if (!req.communeData) {
     return next(new AppError('No commune found for this admin.', 404));
@@ -145,8 +144,8 @@ exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
 
 exports.addCommuneParams = catchAsync(async (req, res, next) => {
   const { commune, quota, reservePlace, oldPeopleQuota, manager } = req.body;
-  if (!commune || !quota || !reservePlace) {
-    return next(new AppError('Missing required parameters.', 400));
+  if (!commune) {
+    return next(new AppError('Missing Commune parameters.', 400));
   }
   const updatedCommune = await Commune.findOneAndUpdate(
     { commune: commune },
@@ -166,4 +165,42 @@ exports.addCommuneParams = catchAsync(async (req, res, next) => {
       updatedCommune,
     },
   });
+});
+exports.getAllCommune = factory.getAll(Commune, {
+  path: 'manager',
+  select: 'firstName lastName  -_id',
+});
+
+exports.addWilayaParams = catchAsync(async (req, res, next) => {
+  const { name, population, quota, admin, oldPeopleQuota } = req.body;
+  if (!name) {
+    return next(new AppError('Missing Wilaya name.', 400));
+  }
+  const updatedWilaya = await Wilaya.findOneAndUpdate(
+    {
+      name: name,
+    },
+    {
+      $set: {
+        population: population,
+        quota: quota,
+        admin: admin,
+        oldPeopleQuota: oldPeopleQuota,
+      },
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
+  res.status(201).json({
+    status: 'success',
+    data: {
+      updatedWilaya,
+    },
+  });
+});
+exports.getAllWilaya = factory.getAll(Wilaya, {
+  path: 'admin',
+  select: 'firstName lastName  -_id',
 });

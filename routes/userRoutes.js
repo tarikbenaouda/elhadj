@@ -19,7 +19,7 @@ router.get('/me', userController.getMe, userController.getUser);
 router.patch('/updateMe', userController.updateMe);
 
 // Routes that require authorization
-router.use(authController.restrictTo('super-admin', 'admin'));
+router.use(authController.restrictTo('super-admin', 'admin', 'manager'));
 
 router.route('/').get(userController.getAllUsers);
 router.post('/search', userController.searchUserByNin);

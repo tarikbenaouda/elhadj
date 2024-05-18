@@ -42,21 +42,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getAllUsers = factory.getAll(User, 'User');
-// exports.getAllUsers = catchAsync(async (req, res, next) => {
-//   let filter = {};
-//   if (req.query.role) {
-//     filter.role = req.query.role.split(',');
-//   }
-//   const users = await User.find(filter);
-//   res.status(200).json({
-//     status: 'success',
-//     results: users.length,
-//     data: {
-//       users,
-//     },
-//   });
-// });
+exports.getAllUsers = factory.getAll(User);
 exports.getUser = factory.getOne(User, 'User');
 exports.searchUserByNin = factory.searchByNin(User, 'User');
 exports.updateUser = catchAsync(async (req, res, next) => {

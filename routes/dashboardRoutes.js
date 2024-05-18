@@ -1,7 +1,7 @@
 const express = require('express');
 const authController = require('../controllers/authController');
 const dashboardController = require('../controllers/dashboardController');
-
+//const router = express.Router({ mergeParams: true });
 const router = express.Router();
 router.use(authController.protect);
 // adjust admin role for progress bar
@@ -29,14 +29,14 @@ router
 
 router.post(
   '/drawList',
-  authController.checkCurrentPhase,
+  // authController.checkCurrentPhase,
   authController.restrictTo('admin'),
   dashboardController.getUserParams,
   dashboardController.getDuplicatedList,
 );
 router.post(
   '/draw',
-  authController.checkCurrentPhase,
+  // authController.checkCurrentPhase,
   authController.restrictTo('admin'),
   dashboardController.getUserParams,
   dashboardController.executeDraw,
@@ -54,10 +54,18 @@ router.patch(
   dashboardController.updatePhase,
 );
 
-router.post(
-  '/commune',
-  authController.restrictTo('admin'),
-  dashboardController.addCommuneParams,
-);
-
+router
+  .route('/communeParams')
+  .get(dashboardController.getAllCommune)
+  .post(
+    authController.restrictTo('admin'),
+    dashboardController.addCommuneParams,
+  );
+router
+  .route('/wilayaParams')
+  .get(dashboardController.getAllWilaya)
+  .post(
+    authController.restrictTo('super-admin'),
+    dashboardController.addWilayaParams,
+  );
 module.exports = router;
