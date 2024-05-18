@@ -6,34 +6,28 @@ const PassengerRefSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
   },
-  seat: { type: Number, required: true },
 });
 
 const FlightSchema = new mongoose.Schema({
-  flightNumber: { type: String, required: true },
-  airline: { type: String, required: true },
+  flightNumber: { type: String, required: true, unique: true },
+  airline: { type: String, default: 'Air Algeria' },
   departure: {
     airport: { type: String, required: true },
-    wilaya: { type: String, required: true },
-    scheduledTime: { type: Date, required: true },
-  },
-  arrival: {
-    airport: { type: String, required: true },
     city: { type: String, required: true },
-    country: { type: String, required: true },
+    country: { type: String, default: 'Algeria' },
     scheduledTime: { type: Date, required: true },
   },
-  duration: { type: Number, required: true },
-  status: { type: String, required: true },
+  status: { type: String, default: 'open' },
   aircraft: {
-    model: { type: String, required: true },
-    seats: { type: Number, required: true },
+    model: { type: String, default: 'Boeing 777' },
+    seats: { type: Number, default: 250 },
   },
+  allowedCities: { type: [String], required: true },
   passengers: [PassengerRefSchema],
 });
 
 FlightSchema.virtual('emptySeats').get(function () {
-  return this.totalSeats - this.passengers.length;
+  return this.aircraft.seats - this.passengers.length;
 });
 
 // Ensure virtual fields are included when converting to JSON or Object

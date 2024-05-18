@@ -2,6 +2,7 @@
 const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
+const Winner = require('../models/winnersModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
@@ -172,4 +173,15 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   await user.save();
 
   createSendToken(user, 200, res);
+});
+
+exports.restrictToWinnerOrMahrem = catchAsync(async (req, res, next) => {
+  const winner = await Winner.findOne({
+    $or: [{ userId: req.user._id }, { mahrem: req.user._id }],
+  });
+  if (!winner)
+    return next(
+      new AppError('You are not allowed to perform this action', 403),
+    );
+  next();
 });
