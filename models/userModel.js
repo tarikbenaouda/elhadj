@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
     },
     lastName: {
       type: String,
-      required: [true, 'Please tell us your first name!'],
+      required: [true, 'Please tell us your last name!'],
       minlength: [3, 'Is your last name less than 3 chars?'],
       maxlength: [30, 'Too long!'],
     },
@@ -129,7 +129,8 @@ const userSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   },
 );
-
+userSchema.index({ role: 1 });
+userSchema.index({ commune: 1 });
 userSchema.virtual('age').get(function () {
   const today = new Date();
   const birthDate = new Date(this.birthdate);

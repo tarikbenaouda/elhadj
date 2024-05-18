@@ -10,6 +10,7 @@ const userRouter = require('./routes/userRoutes');
 const registrationRouter = require('./routes/registrationRoutes');
 const dashboardRouter = require('./routes/dashboardRoutes');
 const paymentRouter = require('./routes/paymentRoutes');
+const medicalAppointmentRouter = require('./routes/MedicalAppointRoute');
 const flightRouter = require('./routes/flightRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
@@ -67,6 +68,7 @@ app.use('/api/v1/dashboard', dashboardRouter);
 
 app.use('/api/v1/registrations', registrationRouter);
 app.use('/api/v1/payments', paymentRouter);
+app.use('/api/v1/medicalAppointment', medicalAppointmentRouter);
 app.use('/api/v1/flights', flightRouter);
 // For all unhandled routes
 app.all('*', (req, res, next) => {

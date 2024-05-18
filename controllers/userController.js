@@ -48,21 +48,29 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getAllUsers = factory.getAll(User, 'User');
+exports.getAllUsers = factory.getAll(User);
 exports.getUser = factory.getOne(User, 'User');
+exports.searchUserByNin = factory.searchByNin(User, 'User');
+exports.updateUser = catchAsync(async (req, res, next) => {
+  const doc = await User.findByIdAndUpdate(
+    req.params.id,
+    {
+      role: req.body.role,
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
 
-exports.createUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined!',
+  if (!doc) {
+    return next(new AppError('No user found with that ID', 404));
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      data: doc,
+    },
   });
-};
-
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'This route is not yet defined!',
-  });
-};
-
-exports.deleteUser = factory.deleteOne(User, 'User');
+});

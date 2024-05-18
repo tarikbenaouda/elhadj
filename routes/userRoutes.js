@@ -19,12 +19,13 @@ router.get('/me', userController.getMe, userController.getUser);
 router.patch('/updateMe', userController.updateMe);
 
 // Routes that require authorization
-router.use(authController.restrictTo('super-admin', 'admin'));
+router.use(authController.restrictTo('super-admin', 'admin', 'manager'));
 
 router.route('/').get(userController.getAllUsers);
+router.post('/search', userController.searchUserByNin);
 router
   .route('/:id')
   .get(userController.getUser)
-  .delete(userController.deleteUser);
+  .patch(userController.updateUser);
 
 module.exports = router;
