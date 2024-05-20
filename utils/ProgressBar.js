@@ -6,9 +6,19 @@ const sendEmail = require('./email'); // Import the sendEmail function
 
 // Schedule a task to run every day at midnight in Algeria
 const job = new cron.CronJob(
-  '0 22 * * *',
+  '4 15 * * *',
   async () => {
-    const currentDate = new Date();
+    let currentDate;
+    if (process.env.NODE_ENV === 'development') {
+      const getCurrentDate = () =>
+        process.env.TEST_CURRENT_DATE
+          ? new Date(process.env.TEST_CURRENT_DATE)
+          : new Date();
+      currentDate = getCurrentDate();
+    } else {
+      currentDate = new Date();
+    }
+    console.log('Running job at: ', currentDate);
     const currentDay = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth(),
