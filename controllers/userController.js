@@ -77,16 +77,20 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 exports.getUser = factory.getOne(User, 'User');
 exports.searchUserByNin = factory.searchByNin(User, 'User');
 exports.updateUser = catchAsync(async (req, res, next) => {
+  let match;
+  if (req.user.role === 'admin') {
+    match = { wilaya: req.user.wilaya };
+  }
   const doc = await User.findByIdAndUpdate(
     req.params.id,
     {
       role: req.body.role,
-      wilaya: req.body.wilaya,
+      match,
       commune: req.body.commune,
     },
     {
       new: true,
-      runValidators: true,
+      runValidators: false,
     },
   );
 
