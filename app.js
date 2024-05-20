@@ -16,18 +16,23 @@ const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 
 const app = express();
-
+const corsOptions = {
+  origin: '*', // Replace with your frontend's URL
+  methods: 'GET,POST,PUT,DELETE,OPTIONS',
+  allowedHeaders: 'Content-Type,Authorization',
+};
 // 1) GLOBAL MIDDLEWARES
 // Set security HTTP headers
 app.use(helmet());
 
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
-app.use(cors());
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Limit requests from same API
 const limiter = rateLimit({
-  max: 100,
+  max: 1000,
   windowMs: 60 * 60 * 1000,
   message: 'Too many requests from this IP, please try again in an hour!',
 });
