@@ -81,6 +81,8 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     req.params.id,
     {
       role: req.body.role,
+      wilaya: req.body.wilaya,
+      commune: req.body.commune,
     },
     {
       new: true,
