@@ -71,7 +71,9 @@ const job = new cron.CronJob(
           { status: 'current' },
         );
 
-        const winners = await Winner.find();
+        if (upcomingPhase.phaseName === 'Paiement de Frais de Hadj') {
+          const winners = await Winner.find().populate({});
+        }
 
         const user = {
           firstName: 'test',
