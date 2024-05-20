@@ -1,13 +1,19 @@
 const mongoose = require('mongoose');
 
-const PassengerRefSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    unique: true,
+const passengerRefSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      //unique: { index: true, partialFilterExpression: { user: { $ne: null } } },
+    },
   },
-});
+  { _id: false },
+);
+passengerRefSchema.index(
+  { user: 1 },
+  { unique: true, partialFilterExpression: { user: { $ne: null } } },
+);
 
 const flightSchema = new mongoose.Schema({
   flightNumber: { type: String, required: true, unique: true },
@@ -24,7 +30,7 @@ const flightSchema = new mongoose.Schema({
     seats: { type: Number, default: 250 },
   },
   allowedCities: { type: [String], required: true },
-  passengers: [PassengerRefSchema],
+  passengers: [passengerRefSchema],
 });
 
 flightSchema.virtual('emptySeats').get(function () {
@@ -35,8 +41,5 @@ flightSchema.virtual('emptySeats').get(function () {
 flightSchema.set('toObject', { virtuals: true });
 flightSchema.set('toJSON', { virtuals: true });
 
-// flightSchema.index({ flightNumber: 1, 'passengers.user': 1 }, { unique: true });
-
 const Flight = mongoose.model('Flight', flightSchema);
-
 module.exports = Flight;
