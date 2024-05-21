@@ -53,7 +53,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 exports.getAllUsers = catchAsync(async (req, res, next) => {
   let match;
   if (req.user.role === 'manager') {
-    match = { commune: req.user.commune };
+    match = { wilaya: req.user.wilaya, commune: req.user.commune };
   } else if (req.user.role === 'admin') {
     match = { wilaya: req.user.wilaya };
   }
@@ -80,6 +80,8 @@ exports.updateUser = catchAsync(async (req, res, next) => {
   let match;
   if (req.user.role === 'admin') {
     match = { wilaya: req.user.wilaya };
+  } else if (req.user.role === 'manager') {
+    match = { wilaya: req.user.wilaya, commune: req.user.commune };
   }
   const doc = await User.findByIdAndUpdate(
     req.params.id,
