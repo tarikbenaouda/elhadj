@@ -1,3 +1,4 @@
+/* eslint-disable prefer-destructuring */
 /* eslint-disable no-sparse-arrays */
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-undef */
@@ -11,6 +12,8 @@ const Registration = require('../models/registrationModel');
 const Winner = require('../models/winnersModel');
 const ProgressBar = require('../models/progressBarModel');
 const Wilaya = require('../models/wilayaModel');
+const HealthCenter = require('../models/healthCentersModel');
+const Post = require('../models/postModel');
 const factory = require('./handlerFactory');
 
 exports.getAlgorithm = factory.getAll(Algorithm);
@@ -117,17 +120,43 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllWinners = catchAsync(async (req, res, next) => {
-  const { commune } = req.communeData;
+  let commune;
+  let wilaya;
+  if (req.user.role === 'admin') {
+    wilaya = req.user.wilaya;
+  } else if (req.user.role === 'manager') {
+    commune = req.user.commune;
+  }
+  const winners = await Winner.getWinnersByCommuneOrWilaya(commune, wilaya);
+  res.status(200).json({
+    status: 'success',
+    results: winners.length,
+    data: {
+      winners,
+    },
+  });
+});
+exports.getAllWinnerss = catchAsync(async (req, res, next) => {
+  let match;
+  if (req.user.role === 'admin') {
+    match = { wilaya: req.user.wilaya };
+  } else if (req.user.role === 'manager') {
+    match = { commune: req.user.commune };
+  }
   const winners = await Winner.find()
-    .select('userId coefficient mahrem -_id')
+    .select('userId coefficient mahrem medicalRecord -_id')
     .populate({
       path: 'userId',
-      match: { commune: commune }, // filter based on commune
-      select: 'firstName lastName commune nationalNumber -_id ',
+      match: match, // filter based on commune
+      select: 'firstName lastName commune wilaya nationalNumber email -_id ',
     })
     .populate({
       path: 'mahrem',
       select: 'firstName lastName -_id',
+    })
+    .populate({
+      path: 'medicalRecord',
+      select: 'accepted -_id',
     })
     .lean();
   res.status(200).json({
@@ -143,7 +172,7 @@ exports.getPhases = factory.getAll(ProgressBar);
 exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
 
 exports.addCommuneParams = catchAsync(async (req, res, next) => {
-  const { commune, quota, reservePlace, oldPeopleQuota, manager } = req.body;
+  const { commune, quota, reservePlace, oldPeopleQuota } = req.body;
   if (!commune) {
     return next(new AppError('Missing Commune parameters.', 400));
   }
@@ -154,7 +183,6 @@ exports.addCommuneParams = catchAsync(async (req, res, next) => {
         quota: quota,
         reservePlace: reservePlace,
         oldPeopleQuota: oldPeopleQuota,
-        manager: manager,
       },
     },
     { new: true, runValidators: true },
@@ -172,7 +200,7 @@ exports.getAllCommune = factory.getAll(Commune, {
 });
 
 exports.addWilayaParams = catchAsync(async (req, res, next) => {
-  const { name, population, quota, admin, oldPeopleQuota } = req.body;
+  const { name, quota, oldPeopleQuota } = req.body;
   if (!name) {
     return next(new AppError('Missing Wilaya name.', 400));
   }
@@ -182,9 +210,7 @@ exports.addWilayaParams = catchAsync(async (req, res, next) => {
     },
     {
       $set: {
-        population: population,
         quota: quota,
-        admin: admin,
         oldPeopleQuota: oldPeopleQuota,
       },
     },
@@ -204,3 +230,14 @@ exports.getAllWilaya = factory.getAll(Wilaya, {
   path: 'admin',
   select: 'firstName lastName  -_id',
 });
+
+exports.getAllHealthCenters = factory.getAll(HealthCenter, {
+  path: 'doctors',
+  select: 'firstName lastName -_id',
+});
+exports.addHealthCenter = factory.createOne(HealthCenter, 'HealthCenter');
+exports.updateHealthCenter = factory.updateOne(HealthCenter, 'HealthCenter');
+
+exports.getAllPostes = factory.getAll(Post);
+exports.addPoste = factory.createOne(Post, 'Poste');
+exports.updatePoste = factory.updateOne(Post, 'Poste');

@@ -15,14 +15,15 @@ router
     '/algorithm',
     authController.restrictTo('super-admin'),
     dashboardController.createAlgorithm,
-  )
+  );
+
+router
+  .route('/algorithm/:id')
   .patch(
-    '/algorithm/:id',
     authController.restrictTo('super-admin'),
     dashboardController.updateAlgorithm,
   )
   .delete(
-    '/algorithm/:id',
     authController.restrictTo('super-admin'),
     dashboardController.deleteAlgorithm,
   );
@@ -30,22 +31,17 @@ router
 router.post(
   '/drawList',
   // authController.checkCurrentPhase,
-  authController.restrictTo('admin'),
   dashboardController.getUserParams,
   dashboardController.getDuplicatedList,
 );
 router.post(
   '/draw',
   // authController.checkCurrentPhase,
-  authController.restrictTo('admin'),
+  authController.restrictTo('manager'),
   dashboardController.getUserParams,
   dashboardController.executeDraw,
 );
-router.get(
-  '/winners',
-  dashboardController.getUserParams,
-  dashboardController.getAllWinners,
-);
+router.get('/winners', dashboardController.getAllWinners);
 
 router.route('/progressBar').get(dashboardController.getPhases);
 router.patch(
@@ -56,16 +52,44 @@ router.patch(
 
 router
   .route('/communeParams')
-  .get(dashboardController.getAllCommune)
+  .get(authController.restrictTo('admin'), dashboardController.getAllCommune)
   .post(
     authController.restrictTo('admin'),
     dashboardController.addCommuneParams,
   );
+
 router
   .route('/wilayaParams')
-  .get(dashboardController.getAllWilaya)
+  .get(
+    authController.restrictTo('super-admin'),
+    dashboardController.getAllWilaya,
+  )
   .post(
     authController.restrictTo('super-admin'),
     dashboardController.addWilayaParams,
   );
+
+router
+  .route('/healthCenters')
+  .get(dashboardController.getAllHealthCenters)
+  .post(
+    authController.restrictTo('manager'),
+    dashboardController.addHealthCenter,
+  );
+router.patch(
+  '/healthCenters/:id',
+  authController.restrictTo('manager'),
+  dashboardController.updateHealthCenter,
+);
+
+router
+  .route('/postes')
+  .get(dashboardController.getAllPostes)
+  .post(authController.restrictTo('manager'), dashboardController.addPoste);
+router.patch(
+  '/postes/:id',
+  authController.restrictTo('manager'),
+  dashboardController.updatePoste,
+);
+
 module.exports = router;

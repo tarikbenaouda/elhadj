@@ -24,10 +24,10 @@ app.use(helmet());
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
 app.use(cors());
-
+app.set('trust proxy', 1); // trust first proxy
 // Limit requests from same API
 const limiter = rateLimit({
-  max: 100,
+  max: 1000,
   windowMs: 60 * 60 * 1000,
   message: 'Too many requests from this IP, please try again in an hour!',
 });
@@ -74,6 +74,11 @@ app.use('/api/v1/flights', flightRouter);
 app.all('*', (req, res, next) => {
   const err = new AppError(`Can't find ${req.originalUrl} on this server`, 404);
   next(err);
+});
+
+app.use((req, res, next) => {
+  console.log(`Request Method: ${req.method}, Request URL: ${req.url}`);
+  next();
 });
 
 //Global Error handler (The last middleware on this app)

@@ -3,6 +3,8 @@ const User = require('../models/userModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const factory = require('./handlerFactory');
+const APIFeatures = require('../utils/apiFeatures');
+const Wilaya = require('../models/wilayaModel');
 
 const filterObj = (obj, ...disallowedFields) => {
   const newObj = {};
@@ -48,18 +50,49 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getAllUsers = factory.getAll(User);
+exports.getAllUsers = catchAsync(async (req, res, next) => {
+  let match;
+  if (req.user.role === 'manager') {
+    match = { wilaya: req.user.wilaya, commune: req.user.commune };
+  } else if (req.user.role === 'admin') {
+    match = { wilaya: req.user.wilaya };
+  }
+  const query = User.find(match);
+
+  const features = new APIFeatures(query, req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate();
+  const users = await features.query;
+  res.status(200).json({
+    status: 'success',
+    results: users.length,
+    data: {
+      data: users,
+    },
+  });
+});
+
 exports.getUser = factory.getOne(User, 'User');
 exports.searchUserByNin = factory.searchByNin(User, 'User');
 exports.updateUser = catchAsync(async (req, res, next) => {
+  let match;
+  if (req.user.role === 'admin') {
+    match = { wilaya: req.user.wilaya };
+  } else if (req.user.role === 'manager') {
+    match = { wilaya: req.user.wilaya, commune: req.user.commune };
+  }
   const doc = await User.findByIdAndUpdate(
     req.params.id,
     {
       role: req.body.role,
+      match,
+      commune: req.body.commune,
     },
     {
       new: true,
-      runValidators: true,
+      runValidators: false,
     },
   );
 

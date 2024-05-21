@@ -176,12 +176,17 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
+const getCurrentDate = () =>
+  process.env.TEST_CURRENT_DATE
+    ? new Date(process.env.TEST_CURRENT_DATE)
+    : new Date();
+
 exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
   const phase = await ProgressBar.findOne({ status: 'current' });
   if (!phase) {
     return next(new AppError('No phase found with the current status', 404));
   }
-  const currentDate = Date.now();
+  const currentDate = getCurrentDate();
   if (currentDate >= phase.startDate && currentDate <= phase.endDate) {
     return next();
   }

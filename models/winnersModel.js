@@ -15,17 +15,13 @@ const winnersSchema = new mongoose.Schema({
     type: Date,
     default: Date.now(),
   },
-  medicalAppointment: {
-    doctorId: {
-      type: mongoose.Schema.ObjectId,
-      ref: 'User',
-    },
-    date: {
-      type: Date,
-    },
-    location: {
-      type: String,
-    },
+  medicalRecord: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'MedicalRecord',
+  },
+  payment: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Payment',
   },
 });
 
@@ -36,11 +32,23 @@ winnersSchema.statics.countWinnersByAge = async function (age) {
   );
   return winnersOfAge.length;
 };
+
 winnersSchema.statics.checkUserInWinnerModel = async function (userId) {
   const user = await this.findOne({ userId: userId });
   return Boolean(user);
 };
-winnersSchema.statics.getWinnersByCommune = async function (commune) {
+
+winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (
+  commune,
+  wilaya,
+) {
+  const matchCondition = {};
+  if (commune) {
+    matchCondition['winnerInfo.commune'] = commune;
+  } else if (wilaya) {
+    matchCondition['winnerInfo.wilaya'] = wilaya;
+  }
+
   const aggregateResult = await this.aggregate([
     {
       $lookup: {
@@ -54,26 +62,63 @@ winnersSchema.statics.getWinnersByCommune = async function (commune) {
       $unwind: '$winnerInfo',
     },
     {
-      $match: {
-        'winnerInfo.commune': commune,
+      $lookup: {
+        from: 'users',
+        localField: 'mahrem',
+        foreignField: '_id',
+        as: 'mahremInfo',
       },
+    },
+    {
+      $unwind: {
+        path: '$mahremInfo',
+        preserveNullAndEmptyArrays: true, // Preserve documents where mahremInfo is null or empty
+      },
+    },
+    {
+      $lookup: {
+        from: 'medicalrecords',
+        localField: 'medicalRecord',
+        foreignField: '_id',
+        as: 'medicalRecordInfo',
+      },
+    },
+    {
+      $unwind: {
+        path: '$medicalRecordInfo',
+        preserveNullAndEmptyArrays: true, // Preserve documents where medicalRecordInfo is null or empty
+      },
+    },
+    {
+      $match: matchCondition,
     },
     {
       $addFields: {
         userId: '$winnerInfo._id',
-        mahrem: '$mahrem',
         firstName: '$winnerInfo.firstName',
         lastName: '$winnerInfo.lastName',
         email: '$winnerInfo.email',
         birthdate: '$winnerInfo.birthdate',
         nationalNumber: '$winnerInfo.nationalNumber',
+        commune: '$winnerInfo.commune',
+        wilaya: '$winnerInfo.wilaya',
+        mahrem: {
+          // _id: { $ifNull: ['$mahremInfo._id', null] },
+          firstName: { $ifNull: ['$mahremInfo.firstName', null] },
+          lastName: { $ifNull: ['$mahremInfo.lastName', null] },
+        },
+        medicalRecord: {
+          //_id: { $ifNull: ['$medicalRecordInfo._id', null] },
+          accepted: { $ifNull: ['$medicalRecordInfo.accepted', null] },
+        },
       },
     },
     {
       $project: {
         winnerInfo: 0, // Exclude winnerInfo object
+        mahremInfo: 0, // Exclude mahremInfo object
+        medicalRecordInfo: 0, // Exclude medicalRecordInfo object
         createdAt: 0, // Exclude createdAt field
-        mahrem: 0, // Exclude mahrem field
         _id: 0, // Exclude _id field
         __v: 0, // Exclude __v field
       },

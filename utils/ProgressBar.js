@@ -3,12 +3,23 @@ const cron = require('cron');
 const ProgressBar = require('../models/progressBarModel');
 const User = require('../models/userModel'); // Assuming you have a User model
 const sendEmail = require('./email'); // Import the sendEmail function
+const Winner = require('../models/winnersModel');
 
 // Schedule a task to run every day at midnight in Algeria
 const job = new cron.CronJob(
-  '0 22 * * *',
+  '4 15 * * *',
   async () => {
-    const currentDate = new Date();
+    let currentDate;
+    if (process.env.NODE_ENV === 'development') {
+      const getCurrentDate = () =>
+        process.env.TEST_CURRENT_DATE
+          ? new Date(process.env.TEST_CURRENT_DATE)
+          : new Date();
+      currentDate = getCurrentDate();
+    } else {
+      currentDate = new Date();
+    }
+    console.log('Running job at: ', currentDate);
     const currentDay = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth(),
@@ -49,7 +60,6 @@ const job = new cron.CronJob(
       status: 'current',
     });
     if (!currentPhase) {
-      // Find the first upcoming phase and update its status
       console.log('No current phase found');
       const upcomingPhase = await ProgressBar.findOne({
         startDate: { $gte: currentDay },
@@ -61,8 +71,10 @@ const job = new cron.CronJob(
           { status: 'current' },
         );
 
-        // Find the user associated with this phase and send them an email
-        //const user = await User.findById(upcomingPhase.userId); // Assuming there's a userId field in phase
+        if (upcomingPhase.phaseName === 'Paiement de Frais de Hadj') {
+          const winners = await Winner.find().populate({});
+        }
+
         const user = {
           firstName: 'test',
           lastName: 'test',
