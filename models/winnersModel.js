@@ -25,11 +25,14 @@ const winnersSchema = new mongoose.Schema({
   },
 });
 
-winnersSchema.statics.countWinnersByAge = async function (age) {
+winnersSchema.statics.countWinnersByAge = async function (startAge, endAge) {
   const winners = await this.find().populate('userId');
-  const winnersOfAge = winners.filter(
-    (winner) => Number(winner.userId.age) >= Number(age),
-  );
+  const winnersOfAge = winners.filter((winner) => {
+    const age = Number(winner.userId.age);
+    const start = Number(startAge);
+    const end = endAge ? Number(endAge) : Infinity;
+    return age >= start && age <= end;
+  });
   return winnersOfAge.length;
 };
 
