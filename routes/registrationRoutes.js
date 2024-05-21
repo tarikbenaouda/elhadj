@@ -7,7 +7,7 @@ router
   .route('/')
   .get(
     authController.protect,
-    authController.restrictTo('super-admin', 'admin'),
+    authController.restrictTo('super-admin', 'admin', 'manager'),
     registrationController.getAllRegistrations,
   )
   .post(
