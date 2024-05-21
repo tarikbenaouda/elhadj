@@ -125,7 +125,7 @@ exports.getAllWinners = catchAsync(async (req, res, next) => {
     .populate({
       path: 'userId',
       match: { commune: commune }, // filter based on commune
-      select: 'firstName lastName commune nationalNumber -_id ',
+      select: 'firstName lastName commune nationalNumber email -_id ',
     })
     .populate({
       path: 'mahrem',
