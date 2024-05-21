@@ -1,3 +1,4 @@
+/* eslint-disable prefer-destructuring */
 /* eslint-disable no-sparse-arrays */
 /* eslint-disable import/no-extraneous-dependencies */
 /* eslint-disable no-undef */
@@ -119,17 +120,43 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllWinners = catchAsync(async (req, res, next) => {
-  const { commune } = req.communeData;
+  let commune;
+  let wilaya;
+  if (req.user.role === 'admin') {
+    wilaya = req.user.wilaya;
+  } else if (req.user.role === 'manager') {
+    commune = req.user.commune;
+  }
+  const winners = await Winner.getWinnersByCommuneOrWilaya(commune, wilaya);
+  res.status(200).json({
+    status: 'success',
+    results: winners.length,
+    data: {
+      winners,
+    },
+  });
+});
+exports.getAllWinnerss = catchAsync(async (req, res, next) => {
+  let match;
+  if (req.user.role === 'admin') {
+    match = { wilaya: req.user.wilaya };
+  } else if (req.user.role === 'manager') {
+    match = { commune: req.user.commune };
+  }
   const winners = await Winner.find()
-    .select('userId coefficient mahrem -_id')
+    .select('userId coefficient mahrem medicalRecord -_id')
     .populate({
       path: 'userId',
-      match: { commune: commune }, // filter based on commune
-      select: 'firstName lastName commune nationalNumber email -_id ',
+      match: match, // filter based on commune
+      select: 'firstName lastName commune wilaya nationalNumber email -_id ',
     })
     .populate({
       path: 'mahrem',
       select: 'firstName lastName -_id',
+    })
+    .populate({
+      path: 'medicalRecord',
+      select: 'accepted -_id',
     })
     .lean();
   res.status(200).json({

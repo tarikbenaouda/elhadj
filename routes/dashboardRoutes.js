@@ -31,22 +31,17 @@ router
 router.post(
   '/drawList',
   // authController.checkCurrentPhase,
-  authController.restrictTo('admin'),
   dashboardController.getUserParams,
   dashboardController.getDuplicatedList,
 );
 router.post(
   '/draw',
   // authController.checkCurrentPhase,
-  authController.restrictTo('admin'),
+  authController.restrictTo('manager'),
   dashboardController.getUserParams,
   dashboardController.executeDraw,
 );
-router.get(
-  '/winners',
-  dashboardController.getUserParams,
-  dashboardController.getAllWinners,
-);
+router.get('/winners', dashboardController.getAllWinners);
 
 router.route('/progressBar').get(dashboardController.getPhases);
 router.patch(

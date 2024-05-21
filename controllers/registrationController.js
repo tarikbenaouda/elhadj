@@ -7,13 +7,55 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 
 exports.getAllRegistrations = catchAsync(async (req, res, next) => {
-  const registrations = await Registration.find({})
-    .select('userId coefficient -_id')
-    .populate({
-      path: 'userId',
-      select: 'firstName lastName commune nationalNumber -_id ',
-    })
-    .lean();
+  let match = {};
+  switch (req.user.role) {
+    case 'manager':
+      match = {
+        'user.commune': req.user.commune,
+      };
+      break;
+    case 'admin':
+      match = {
+        'user.wilaya': req.user.wilaya,
+      };
+      break;
+    default:
+      break;
+  }
+
+  const registrations = await Registration.aggregate([
+    {
+      $lookup: {
+        from: 'users', // replace with the actual name of the user collection
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'user',
+      },
+    },
+    {
+      $unwind: '$user',
+    },
+    {
+      $match: match,
+    },
+    {
+      $addFields: {
+        firstName: '$user.firstName',
+        lastName: '$user.lastName',
+        commune: '$user.commune',
+        nationalNumber: '$user.nationalNumber',
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        user: 0,
+        __v: 0,
+        userId: 0,
+      },
+    },
+  ]);
+
   res.status(200).json({
     status: 'success',
     results: registrations.length,
@@ -22,6 +64,7 @@ exports.getAllRegistrations = catchAsync(async (req, res, next) => {
     },
   });
 });
+
 exports.register = catchAsync(async (req, res, next) => {
   let mahrem;
   if (req.user.sex === 'female') {

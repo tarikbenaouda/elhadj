@@ -24,7 +24,7 @@ app.use(helmet());
 if (process.env.NODE_ENV === 'development') app.use(morgan('dev'));
 
 app.use(cors());
-
+app.set('trust proxy', 1); // trust first proxy
 // Limit requests from same API
 const limiter = rateLimit({
   max: 1000,
