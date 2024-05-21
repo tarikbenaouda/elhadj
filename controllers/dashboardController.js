@@ -98,24 +98,40 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
       quota,
       commune,
       reservePlace,
-      //oldQuotaAge,
-      //placesForEachCategory,
-      //ageCategories,
+      // placesForEachCategory,
+      // ageCategories,
       page: 1,
       limit: 151,
     });
-  // const numberOld = await Winner.countWinnersByAge(ageCount);
+
+  const ageRanges = [
+    { min: 18, max: 30 },
+    { min: 31, max: 40 },
+    { min: 41, max: 50 },
+    { min: 51, max: 60 },
+    { min: 61, max: 70 },
+    { min: 71 },
+  ];
+
+  const counts = await Promise.all(
+    ageRanges.map(({ min, max }) => Winner.countWinnersByAge(min, max)),
+  );
+
   if (remainingQuota === 0 && remainingReserve === 0 && !reserve) {
     return next(new AppError('the Draw is finished', 404));
   }
+
   res.status(201).json({
     status: 'success',
     winners: winner,
     remainingPlaces: remainingQuota,
     reserves: reserve,
     remainingReservePlaces: remainingReserve,
-    //   length: drawPool.length,
     drawList: drawPool,
+    ...ageRanges.reduce((acc, { min, max }, i) => {
+      acc[`age${min}to${max || ''}`] = counts[i];
+      return acc;
+    }, {}),
   });
 });
 
@@ -136,6 +152,7 @@ exports.getAllWinners = catchAsync(async (req, res, next) => {
     },
   });
 });
+
 exports.getAllWinnerss = catchAsync(async (req, res, next) => {
   let match;
   if (req.user.role === 'admin') {
