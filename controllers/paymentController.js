@@ -8,7 +8,7 @@ const catchAsync = require('../utils/catchAsync');
 exports.getAllPayments = catchAsync(async (req, res, next) => {
   const { commune } = req.user;
   const [winners, payments] = await Promise.all([
-    Winner.getWinnersByCommuneOrWilaya({ commune }),
+    Winner.getWinnersByCommuneOrWilaya(commune),
     Payment.getPaymentsByCommune(commune),
   ]);
   winners.forEach((winner) => {
