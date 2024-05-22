@@ -36,7 +36,6 @@ registrationSchema.statics.getDrawPool = async function (
   endAge,
 ) {
   try {
-    // Aggregation pipeline to construct the draw pool
     const pipeline = [
       {
         $lookup: {
@@ -74,7 +73,7 @@ registrationSchema.statics.getDrawPool = async function (
       },
       {
         $match: {
-          'user.commune': commune, // Match commune from the User model
+          'user.commune': commune,
         },
       },
       {
@@ -99,7 +98,7 @@ registrationSchema.statics.getDrawPool = async function (
             commune: '$user.commune',
             wilaya: '$user.wilaya',
             birthdate: '$user.birthdate',
-            age: '$age', // Include age in userId
+            age: '$age',
           },
           mahrem: '$mahrem',
           repeatCount: 1, // Include repeat count field

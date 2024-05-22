@@ -29,19 +29,29 @@ exports.updateAlgorithm = catchAsync(async (req, res, next) => {
     ...otherFields
   } = req.body;
 
+  const updateFields = {
+    ...otherFields,
+  };
+  if (newStartAge !== undefined) {
+    updateFields['ageCategories.$.startAge'] = newStartAge;
+  }
+
+  if (newEndAge !== undefined) {
+    updateFields['ageCategories.$.endAge'] = newEndAge;
+  }
+
+  if (newPercentageOfQuota !== undefined) {
+    updateFields['ageCategories.$.percentageOfQuota'] = newPercentageOfQuota;
+  }
+  const query = { _id: algorithmId };
+  if (oldStartAge !== undefined) {
+    query['ageCategories.startAge'] = oldStartAge;
+  }
   const algorithm = await Algorithm.findOneAndUpdate(
-    { _id: algorithmId, 'ageCategories.startAge': oldStartAge },
-    {
-      $set: {
-        ...otherFields,
-        'ageCategories.$.startAge': newStartAge,
-        'ageCategories.$.endAge': newEndAge,
-        'ageCategories.$.percentageOfQuota': newPercentageOfQuota,
-      },
-    },
+    query,
+    { $set: updateFields },
     { new: true, runValidators: true },
   );
-
   if (!algorithm) {
     return next(new AppError('No algorithm found with that ID', 404));
   }
@@ -211,9 +221,17 @@ exports.addCommuneParams = catchAsync(async (req, res, next) => {
     },
   });
 });
-exports.getAllCommune = factory.getAll(Commune, {
-  path: 'manager',
-  select: 'firstName lastName  -_id',
+exports.getAllCommune = catchAsync(async (req, res, next) => {
+  const commune = await Commune.find({ wilaya: req.user.wilaya });
+  if (!commune)
+    return next(new AppError('No commune found for this wilaya', 404));
+  res.status(200).json({
+    status: 'success',
+    results: commune.length,
+    data: {
+      commune,
+    },
+  });
 });
 
 exports.addWilayaParams = catchAsync(async (req, res, next) => {
