@@ -22,7 +22,6 @@ const medicalRecordSchema = new mongoose.Schema({
   },
   date: {
     type: Date,
-    required: [true, 'A medical Record must have a date!'],
     default: Date.now(),
   },
   accepted: {
