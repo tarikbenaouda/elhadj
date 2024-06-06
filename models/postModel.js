@@ -22,6 +22,15 @@ const postSchema = new mongoose.Schema({
     ref: 'Postman',
     required: [true, 'Postman is required.'],
   },
+  position: {
+    type: {
+      lat: Number,
+      lng: Number,
+    },
+  },
+  description: {
+    type: String,
+  },
 });
 
 const Post = mongoose.model('Post', postSchema);

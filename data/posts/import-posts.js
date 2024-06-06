@@ -41,27 +41,23 @@ const importData = async () => {
     const postman = await User.find({
       nationalNumber: { $in: nationalNumbers },
     });
-    await Promise.all(
-      postman.map(async (el) => {
-        el.role = 'postman';
-        await el.save({ validateBeforeSave: false });
-      }),
-    );
 
-    // for (let i = 0; i < posts.length; i++) {
-    //   console.log(posts[i].postman);
-    //   const postmanId = postman
-    //     .filter((user) => posts[i].postman.includes(+user.nationalNumber))
-    //     .map((el) => el._id);
-    //   console.log(postmanId);
-    //   await Post.create({
-    //     title: posts[i].title,
-    //     postalCode: posts[i].post_code,
-    //     commune: posts[i].commune,
-    //     wilaya: posts[i].wilaya,
-    //     postman: postmanId,
-    //   });
-    // }
+    for (let i = 0; i < posts.length; i++) {
+      console.log(posts[i].postman);
+      const postmanId = postman
+        .filter((user) => posts[i].postman.includes(+user.nationalNumber))
+        .map((el) => el._id);
+      console.log(postmanId);
+      await Post.create({
+        title: posts[i].title,
+        postalCode: posts[i].post_code,
+        commune: posts[i].commune,
+        wilaya: posts[i].wilaya,
+        postman: postmanId,
+        position: posts[i].position,
+        description: posts[i].description,
+      });
+    }
     console.log('Data successfully imported :)');
   } catch (err) {
     console.log(err.message);

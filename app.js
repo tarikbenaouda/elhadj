@@ -12,6 +12,7 @@ const dashboardRouter = require('./routes/dashboardRoutes');
 const paymentRouter = require('./routes/paymentRoutes');
 const medicalAppointmentRouter = require('./routes/MedicalAppointRoute');
 const flightRouter = require('./routes/flightRoutes');
+const mapRouter = require('./routes/mapRoutes');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 
@@ -70,6 +71,7 @@ app.use('/api/v1/registrations', registrationRouter);
 app.use('/api/v1/payments', paymentRouter);
 app.use('/api/v1/medicalAppointment', medicalAppointmentRouter);
 app.use('/api/v1/flights', flightRouter);
+app.use('/api/v1/map', mapRouter);
 // For all unhandled routes
 app.all('*', (req, res, next) => {
   const err = new AppError(`Can't find ${req.originalUrl} on this server`, 404);

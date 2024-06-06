@@ -4,56 +4,84 @@
     "title": "Sidi Bel Abbes",
     "commune": "Sidi Bel-Abbes",
     "wilaya": "Sidi Bel Abbes",
-    "postman": [565349270, 929815843]
+    "postman": [565349270, 929815843],
+    "position": {
+      "lat": 35.1907103,
+      "lng": -0.635284
+    },
+    "description": "overt aparitr 8:00 jusqu'a 16:30"
   },
   {
     "post_code": "22016",
     "title": "Sidi Bel Abbes El Wiam",
     "commune": "Sidi Bel-Abbes",
     "wilaya": "Sidi Bel Abbes",
-    "postman": [502915008]
+    "postman": [502915008],
+    "position": {
+      "lat": 35.2085847,
+      "lng": -0.6257437
+    },
+    "description": "overt aparitr 8:00 jusqu'a 16:30"
   },
   {
     "post_code": "22037",
     "title": "Ain Trid",
     "commune": "Ain Thrid",
     "wilaya": "Sidi Bel Abbes",
-    "postman": [747929721]
+    "postman": [747929721],
+    "position": {
+      "lat": 35.2845752,
+      "lng": -0.6770734
+    },
+    "description": "overt aparitr 8:00 jusqu'a 16:30"
   },
   {
     "post_code": "22067",
     "title": "Telagh Mokdad Med",
     "commune": "Telagh",
     "wilaya": "Sidi Bel Abbes",
-    "postman": [361879490]
-  },
-  {
-    "post_code": "22073",
-    "title": "Berkane Ben Yagoub",
-    "commune": "Telagh",
-    "wilaya": "Sidi Bel Abbes",
-    "postman": [729450595]
+    "postman": [361879490, 729450595],
+    "position": {
+      "lat": 34.7817068,
+      "lng": -0.5714377
+    },
+    "description": "overt aparitr 8:00 jusqu'a 16:30"
   },
   {
     "post_code": "48000",
     "title": "Relizane",
     "commune": "Relizane",
     "wilaya": "Relizane",
-    "postman": [182185536, 599689263]
+    "postman": [182185536, 599689263],
+    "position": {
+      "lat": 35.7433813,
+      "lng": 0.5588788
+    },
+    "description": "overt aparitr 8:00 jusqu'a 16:30"
   },
   {
     "post_code": "48076",
     "title": "Boubakeur",
     "commune": "Relizane",
     "wilaya": "Relizane",
-    "postman": [129424478]
+    "postman": [129424478],
+    "position": {
+      "lat": 35.7380944,
+      "lng": 0.5575561
+    },
+    "description": "overt aparitr 8:00 jusqu'a 16:30"
   },
   {
     "post_code": "48042",
     "title": "Benziane",
     "commune": "Oued-Rhiou",
     "wilaya": "Relizane",
-    "postman": [835681592]
+    "postman": [835681592],
+    "position": {
+      "lat": 35.961136,
+      "lng": 0.9077748
+    },
+    "description": "overt aparitr 8:00 jusqu'a 16:30"
   },
 
   {
@@ -61,6 +89,11 @@
     "title": "Tliouanet",
     "commune": "Yellel",
     "wilaya": "Relizane",
-    "postman": [323749641]
+    "postman": [323749641],
+    "position": {
+      "lat": 35.7222557,
+      "lng": 0.3343239
+    },
+    "description": "overt aparitr 8:00 jusqu'a 16:30"
   }
 ]
