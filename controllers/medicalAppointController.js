@@ -5,7 +5,9 @@ const AppError = require('../utils/appError');
 const Winner = require('../models/winnersModel');
 
 exports.getAllpatients = catchAsync(async (req, res, next) => {
-  let winners = await Winner.getWinnersByCommuneOrWilaya(req.user.commune);
+  let winners = await Winner.getWinnersByCommuneOrWilaya({
+    commune: req.user.commune,
+  });
   winners = await Promise.all(
     winners.map(async (winner) => {
       const medicalAppointment = await MedicalRecord.findOne({

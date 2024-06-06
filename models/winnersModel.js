@@ -1,3 +1,4 @@
+/* eslint-disable dot-notation */
 const mongoose = require('mongoose');
 
 const winnersSchema = new mongoose.Schema({
@@ -41,11 +42,12 @@ winnersSchema.statics.checkUserInWinnerModel = async function (userId) {
   return Boolean(user);
 };
 
-winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (
-  commune,
-  wilaya,
-) {
+winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (options) {
+  const { commune, wilaya, id } = options;
   const matchCondition = {};
+  // if (id && mongoose.Types.ObjectId.isValid(id)) {
+  //   matchCondition['winnerInfo.userId'] = id;
+  // }
   if (commune) {
     matchCondition['winnerInfo.commune'] = commune;
   } else if (wilaya) {
@@ -93,6 +95,20 @@ winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (
       },
     },
     {
+      $lookup: {
+        from: 'payments',
+        localField: 'payment',
+        foreignField: '_id',
+        as: 'payment',
+      },
+    },
+    {
+      $unwind: {
+        path: '$payment',
+        preserveNullAndEmptyArrays: true, // Preserve documents where payment is null or empty
+      },
+    },
+    {
       $match: matchCondition,
     },
     {
@@ -114,6 +130,9 @@ winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (
           //_id: { $ifNull: ['$medicalRecordInfo._id', null] },
           accepted: { $ifNull: ['$medicalRecordInfo.accepted', null] },
         },
+        payment: {
+          _id: { $ifNull: ['$payment._id', null] },
+        },
       },
     },
     {
@@ -121,6 +140,7 @@ winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (
         winnerInfo: 0, // Exclude winnerInfo object
         mahremInfo: 0, // Exclude mahremInfo object
         medicalRecordInfo: 0, // Exclude medicalRecordInfo object
+        payment: 0, // Exclude payment object
         createdAt: 0, // Exclude createdAt field
         _id: 0, // Exclude _id field
         __v: 0, // Exclude __v field

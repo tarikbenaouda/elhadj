@@ -78,6 +78,7 @@ exports.getAll = (Model, populateOptions) =>
       },
     });
   });
+
 exports.getOne = (Model, name, popOptions) =>
   catchAsync(async (req, res, next) => {
     let query = Model.findById(req.params.id);

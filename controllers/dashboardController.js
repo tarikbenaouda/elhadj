@@ -153,7 +153,10 @@ exports.getAllWinners = catchAsync(async (req, res, next) => {
   } else if (req.user.role === 'manager') {
     commune = req.user.commune;
   }
-  const winners = await Winner.getWinnersByCommuneOrWilaya(commune, wilaya);
+  const winners = await Winner.getWinnersByCommuneOrWilaya(
+    { commune },
+    { wilaya },
+  );
   res.status(200).json({
     status: 'success',
     results: winners.length,
@@ -195,7 +198,91 @@ exports.getAllWinnerss = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getPhases = factory.getAll(ProgressBar);
+exports.getPhases = catchAsync(async (req, res, next) => {
+  const phases = await ProgressBar.find().sort({ startDate: 1 });
+  if (req.user.role === 'user') {
+    const currentPhase = await ProgressBar.findOne({ status: 'current' });
+    if (
+      currentPhase.phaseName === 'Inscription de Hadj' ||
+      currentPhase.phaseName === 'Tirage au Sort'
+    ) {
+      const registration = await Registration.findOne({
+        $or: [{ userId: req.user._id }, { mahrem: req.user._id }],
+      });
+      if (registration) {
+        phases.registration = 'you are  registered';
+      } else {
+        phases.registration = 'you are not registered';
+      }
+    } else {
+      const winner = await Winner.findOne({
+        $or: [{ userId: req.user._id }, { mahrem: req.user._id }],
+      });
+      if (!winner)
+        return next(
+          new AppError('You are not allowed to perform this action', 403),
+        );
+      switch (currentPhase.phaseName) {
+        case 'Visite Médicale': {
+          const checkMedicalRecord = await Winner.findOne({
+            userId: req.user._id,
+          }).populate({
+            path: 'medicalRecord',
+            select: 'accepted -_id',
+          });
+          if (!checkMedicalRecord || !checkMedicalRecord.medicalRecord) {
+            console.log('no medical record found');
+            phases.passMedicalRecord =
+              'you have not passed the medical record yet';
+          } else if (checkMedicalRecord.medicalRecord.accepted === true) {
+            phases.passMedicalRecord = 'you have passed the medical record';
+          } else if (checkMedicalRecord.medicalRecord.accepted === false) {
+            phases.passMedicalRecord = 'you were refused by the medical record';
+          }
+          break;
+        }
+        case 'Paiement de Frais de Hadj': {
+          const checkPayment = await Winner.findOne({
+            userId: req.user._id,
+          }).populate({
+            path: 'payment',
+            select: 'refunded -_id',
+          });
+          console.log(checkPayment);
+          if (!checkPayment || !checkPayment.payment) {
+            console.log('no payment found');
+            phases.passPaiment = 'you have not paid yet';
+          } else if (checkPayment.payment.refunded === true) {
+            phases.passPaiment = 'you have been refunded';
+          } else if (checkPayment.payment.refunded === false) {
+            phases.passPaiment = 'you have paid';
+          }
+          break;
+        }
+        case "Reservation d'Hotels": {
+          if (winner.medicalRecord.accepted !== true) {
+            phases[0].canBook = false;
+          }
+          break;
+        }
+        default: {
+          phases[0].canBook = false;
+          break;
+        }
+      }
+    }
+  }
+  res.status(200).json({
+    status: 'success',
+    results: phases.length,
+    data: {
+      //phases,
+      registration: phases.registration,
+      passMedicalRecord: phases.passMedicalRecord,
+      passPaiment: phases.passPaiment,
+    },
+  });
+});
 exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
 
 exports.addCommuneParams = catchAsync(async (req, res, next) => {
