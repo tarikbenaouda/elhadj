@@ -53,8 +53,13 @@ exports.pay = catchAsync(async (req, res, next) => {
       })
     ).toObject();
     // adding payment field to winner document
-    const winner = await Winner.findOne({ userId: userId._id });
-    winner.payment = payment._id;
+    let winner = await Winner.findOne({ userId: userId._id });
+
+    if (winner) winner.payment = payment._id;
+    else {
+      winner = await Winner.findOne({ mahrem: userId._id });
+      winner.mahremPayment = payment._id;
+    }
     await winner.save();
     const user = await User.findById(userId._id)
       .select('firstName lastName email birthdate nationalNumber paiment')

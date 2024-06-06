@@ -23,6 +23,10 @@ const winnersSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: 'Payment',
   },
+  mahremPayment: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Payment',
+  },
 });
 
 winnersSchema.statics.countWinnersByAge = async function (startAge, endAge) {
