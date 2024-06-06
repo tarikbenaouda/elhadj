@@ -52,6 +52,10 @@ exports.pay = catchAsync(async (req, res, next) => {
         post: post._id,
       })
     ).toObject();
+    // adding payment field to winner document
+    const winner = await Winner.findOne({ userId: userId._id });
+    winner.payment = payment._id;
+    await winner.save();
     const user = await User.findById(userId._id)
       .select('firstName lastName email birthdate nationalNumber paiment')
       .lean();
