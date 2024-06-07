@@ -110,7 +110,7 @@ winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (
         commune: '$winnerInfo.commune',
         wilaya: '$winnerInfo.wilaya',
         mahrem: {
-          // _id: { $ifNull: ['$mahremInfo._id', null] },
+          _id: { $ifNull: ['$mahremInfo._id', null] },
           firstName: { $ifNull: ['$mahremInfo.firstName', null] },
           lastName: { $ifNull: ['$mahremInfo.lastName', null] },
         },
