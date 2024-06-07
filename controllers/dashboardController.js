@@ -222,21 +222,43 @@ exports.getPhases = catchAsync(async (req, res, next) => {
         return next(
           new AppError('You are not allowed to perform this action', 403),
         );
+      const isFemale = Boolean(winner.mahrem);
+      console.log(isFemale);
       switch (currentPhase.phaseName) {
         case 'Visite Médicale': {
           const checkMedicalRecord = await Winner.findOne({
-            userId: req.user._id,
-          }).populate({
-            path: 'medicalRecord',
-            select: 'accepted -_id',
-          });
-          if (!checkMedicalRecord || !checkMedicalRecord.medicalRecord) {
-            console.log('no medical record found');
+            $or: [{ userId: req.user._id }, { mahrem: req.user._id }],
+          })
+            .populate({
+              path: 'medicalRecord',
+              select: 'accepted -_id',
+            })
+            .populate({
+              path: 'mahremMedicalRecord',
+              select: 'accepted -_id',
+            })
+            .lean();
+
+          if (
+            !checkMedicalRecord ||
+            (!checkMedicalRecord.medicalRecord &&
+              !checkMedicalRecord.mahremMedicalRecord)
+          ) {
             phases.passMedicalRecord =
               'you have not passed the medical record yet';
-          } else if (checkMedicalRecord.medicalRecord.accepted === true) {
+          } else if (
+            (checkMedicalRecord.medicalRecord &&
+              checkMedicalRecord.medicalRecord.accepted === true) ||
+            (checkMedicalRecord.mahremMedicalRecord &&
+              checkMedicalRecord.mahremMedicalRecord.accepted === true)
+          ) {
             phases.passMedicalRecord = 'you have passed the medical record';
-          } else if (checkMedicalRecord.medicalRecord.accepted === false) {
+          } else if (
+            (checkMedicalRecord.medicalRecord &&
+              checkMedicalRecord.medicalRecord.accepted === false) ||
+            (checkMedicalRecord.mahremMedicalRecord &&
+              checkMedicalRecord.mahremMedicalRecord.accepted === false)
+          ) {
             phases.passMedicalRecord = 'you were refused by the medical record';
           }
           break;
@@ -259,14 +281,7 @@ exports.getPhases = catchAsync(async (req, res, next) => {
           }
           break;
         }
-        case "Reservation d'Hotels": {
-          if (winner.medicalRecord.accepted !== true) {
-            phases[0].canBook = false;
-          }
-          break;
-        }
         default: {
-          phases[0].canBook = false;
           break;
         }
       }
