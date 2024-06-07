@@ -91,6 +91,11 @@ router.patch(
   authController.restrictTo('manager'),
   dashboardController.updatePoste,
 );
+router.get(
+  '/statistics',
+  authController.restrictTo('super-admin', 'admin', 'manager'),
+  dashboardController.getStatistics,
+);
 
 router.get('/test', dashboardController.test);
 

@@ -11,6 +11,24 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
     Winner.getWinnersByCommuneOrWilaya({ commune }),
     Payment.getPaymentsByCommune(commune),
   ]);
+  const winnersIds = winners.map((w) => w.userId);
+  const mahremIds = winners.map((w) => w.mahrem._id).filter((el) => el);
+  const mahrems = (
+    await User.find({ _id: { $in: mahremIds } }).select(
+      '-__v -role -passwordChangedAt -sex -phone',
+    )
+  )
+    .map((m) => m.toObject())
+    .map((m) => {
+      m.userId = m._id;
+      delete m._id;
+      delete m.id;
+      delete m.age;
+      return m;
+    });
+  mahrems.forEach((mahrem) => {
+    if (!winnersIds.includes(mahrem.userId)) winners.push(mahrem);
+  });
   winners.forEach((winner) => {
     const payment = payments.find((p) => p.userId.equals(winner.userId));
     if (payment) {
@@ -19,6 +37,8 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
     } else {
       winner.payment = 'not-paid';
     }
+    delete winner.medicalRecord;
+    delete winner.mahrem;
   });
   res.status(200).json({
     status: 'success',
