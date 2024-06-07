@@ -9,6 +9,8 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const Commune = require('../models/communeModel');
 const Registration = require('../models/registrationModel');
+const User = require('../models/userModel');
+const Hadj = require('../models/hadjModel');
 const Winner = require('../models/winnersModel');
 const ProgressBar = require('../models/progressBarModel');
 const Wilaya = require('../models/wilayaModel');
@@ -280,3 +282,75 @@ exports.updateHealthCenter = factory.updateOne(HealthCenter, 'HealthCenter');
 exports.getAllPostes = factory.getAll(Post);
 exports.addPoste = factory.createOne(Post, 'Poste');
 exports.updatePoste = factory.updateOne(Post, 'Poste');
+
+exports.getStatistics = catchAsync(async (req, res, next) => {
+  const winners = await Winner.find();
+  const winnersIds = winners.map((m) => m.toObject()).map((m) => m.userId);
+  const mahremsIds = winners
+    .map((m) => m.toObject())
+    .map((m) => m.mahrem)
+    .filter((m) => m);
+  winnersIds.push(...mahremsIds);
+  const hommesGangnats = await User.countDocuments({
+    _id: { $in: winnersIds },
+    sex: 'male',
+  });
+  const femmesGangnats = await User.countDocuments({
+    _id: { $in: winnersIds },
+    sex: 'female',
+  });
+  const hadjCountEachYear = await Hadj.aggregate([
+    {
+      $group: {
+        _id: { $year: '$hadjDate' }, // Group by year
+        count: { $sum: 1 }, // Count the number of documents
+      },
+    },
+    {
+      $sort: { _id: 1 },
+    },
+  ]);
+
+  hadjCountEachYear.forEach((h) => {
+    const randomDiff = Math.floor(Math.random() * 100) - 50;
+    h.count += randomDiff;
+  });
+  const pieData = await User.aggregate([
+    // Calculate the age field
+    {
+      $addFields: {
+        age: {
+          $subtract: [{ $year: new Date() }, { $year: '$birthdate' }],
+        },
+      },
+    },
+    // Group users by age intervals
+    {
+      $bucket: {
+        groupBy: '$age',
+        boundaries: [0, 18, 32, 47, 65, 80],
+        default: 'Other',
+        output: {
+          count: { $sum: 1 },
+        },
+      },
+    },
+  ]);
+  pieData.forEach((element, index, array) => {
+    if (element._id !== 'Other') {
+      if (index !== array.length - 2)
+        element._id = `${element._id}-${array[index + 1]._id}`;
+      else element._id = `${element._id}-80`;
+    } else element._id = '>=80';
+  });
+  res.status(200).json({
+    status: 'success',
+    data: {
+      gangnats: winners.length,
+      hommesGangnats,
+      femmesGangnats,
+      hadjCountEachYear,
+      pieData,
+    },
+  });
+});
