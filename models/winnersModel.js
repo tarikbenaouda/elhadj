@@ -20,6 +20,10 @@ const winnersSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: 'MedicalRecord',
   },
+  mahremMedicalRecord: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'MedicalRecord',
+  },
   payment: {
     type: mongoose.Schema.ObjectId,
     ref: 'Payment',
@@ -129,6 +133,7 @@ winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (options) {
           // _id: { $ifNull: ['$mahremInfo._id', null] },
           firstName: { $ifNull: ['$mahremInfo.firstName', null] },
           lastName: { $ifNull: ['$mahremInfo.lastName', null] },
+          mahremId: { $ifNull: ['$mahremInfo._id', null] },
         },
         medicalRecord: {
           //_id: { $ifNull: ['$medicalRecordInfo._id', null] },
@@ -155,6 +160,19 @@ winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (options) {
   return aggregateResult;
 };
 
+winnersSchema.methods.isMahrem = function (id) {
+  // Convert to string for comparison
+  const idStr = String(id);
+
+  // Check if id matches userId or mahrem
+  if (String(this.userId) === idStr || String(this.mahrem) === idStr) {
+    // If it matches mahrem, return true
+    if (String(this.mahrem) === idStr) {
+      return true;
+    }
+    return false;
+  }
+};
 const Winner = mongoose.model('Winner', winnersSchema);
 
 module.exports = Winner;

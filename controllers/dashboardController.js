@@ -1,3 +1,4 @@
+/* eslint-disable no-lonely-if */
 /* eslint-disable prefer-destructuring */
 /* eslint-disable no-sparse-arrays */
 /* eslint-disable import/no-extraneous-dependencies */
@@ -166,138 +167,118 @@ exports.getAllWinners = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getAllWinnerss = catchAsync(async (req, res, next) => {
-  let match;
-  if (req.user.role === 'admin') {
-    match = { wilaya: req.user.wilaya };
-  } else if (req.user.role === 'manager') {
-    match = { commune: req.user.commune };
+function handleMedicalPhase(winner, phases, isMahrem) {
+  if (isMahrem) {
+    if (!winner.mahremMedicalRecord) {
+      phases.passMedicalRecord =
+        'you are registered as a mahrem and you have not passed the medical record yet';
+    } else if (winner.mahremMedicalRecord.accepted) {
+      phases.passMedicalRecord =
+        'you are registered as a mahrem and you have passed the medical record';
+    } else {
+      phases.passMedicalRecord =
+        'you are registered as a mahrem and you were refused by the medical record';
+    }
+  } else {
+    if (!winner.medicalRecord) {
+      phases.passMedicalRecord = 'you have not passed the medical record yet';
+    } else if (winner.medicalRecord.accepted) {
+      phases.passMedicalRecord = 'you have passed the medical record';
+    } else {
+      phases.passMedicalRecord = 'you were refused by the medical record';
+    }
   }
-  const winners = await Winner.find()
-    .select('userId coefficient mahrem medicalRecord -_id')
-    .populate({
-      path: 'userId',
-      match: match, // filter based on commune
-      select: 'firstName lastName commune wilaya nationalNumber email -_id ',
-    })
-    .populate({
-      path: 'mahrem',
-      select: 'firstName lastName -_id',
-    })
-    .populate({
-      path: 'medicalRecord',
-      select: 'accepted -_id',
-    })
-    .lean();
-  res.status(200).json({
-    status: 'success',
-    results: winners.length,
-    data: {
-      winners,
-    },
-  });
-});
+}
+
+function handlePaymentPhase(winner, phases, isMahrem) {
+  if (isMahrem) {
+    if (!winner.mahremPayment) {
+      phases.passPaiment =
+        'you are registered as a mahrem and you have not paid yet';
+    } else if (winner.mahremPayment.refunded) {
+      phases.passPaiment =
+        'you are registered as a mahrem and you have been refunded';
+    } else {
+      phases.passPaiment = 'you are registered as a mahrem and you have paid';
+    }
+  } else {
+    if (!winner.payment) {
+      phases.passPaiment = 'you have not paid yet';
+    } else if (winner.payment.refunded) {
+      phases.passPaiment = 'you have been refunded';
+    } else {
+      phases.passPaiment = 'you have paid';
+    }
+  }
+}
 
 exports.getPhases = catchAsync(async (req, res, next) => {
-  const phases = await ProgressBar.find().sort({ startDate: 1 });
+  const phases = await ProgressBar.find().sort({ startDate: 1 }).lean();
+
   if (req.user.role === 'user') {
-    const currentPhase = await ProgressBar.findOne({ status: 'current' });
+    const currentPhase = await ProgressBar.findOne({
+      status: 'current',
+    }).lean();
+
     if (
       currentPhase.phaseName === 'Inscription de Hadj' ||
       currentPhase.phaseName === 'Tirage au Sort'
     ) {
       const registration = await Registration.findOne({
         $or: [{ userId: req.user._id }, { mahrem: req.user._id }],
-      });
-      if (registration) {
-        phases.registration = 'you are  registered';
-      } else {
-        phases.registration = 'you are not registered';
-      }
+      }).lean();
+
+      phases.registration = registration
+        ? 'you are registered'
+        : 'you are not registered';
     } else {
       const winner = await Winner.findOne({
         $or: [{ userId: req.user._id }, { mahrem: req.user._id }],
-      });
-      if (!winner)
+      }).populate([
+        {
+          path: 'medicalRecord',
+          select: 'accepted -_id',
+        },
+        {
+          path: 'mahremMedicalRecord',
+          select: 'accepted -_id',
+        },
+        {
+          path: 'payment',
+          select: 'refunded -_id',
+        },
+        {
+          path: 'mahremPayment',
+          select: 'refunded -_id',
+        },
+      ]);
+
+      if (!winner) {
         return next(
           new AppError('You are not allowed to perform this action', 403),
         );
-      const isFemale = Boolean(winner.mahrem);
-      console.log(isFemale);
-      switch (currentPhase.phaseName) {
-        case 'Visite Médicale': {
-          const checkMedicalRecord = await Winner.findOne({
-            $or: [{ userId: req.user._id }, { mahrem: req.user._id }],
-          })
-            .populate({
-              path: 'medicalRecord',
-              select: 'accepted -_id',
-            })
-            .populate({
-              path: 'mahremMedicalRecord',
-              select: 'accepted -_id',
-            })
-            .lean();
+      }
 
-          if (
-            !checkMedicalRecord ||
-            (!checkMedicalRecord.medicalRecord &&
-              !checkMedicalRecord.mahremMedicalRecord)
-          ) {
-            phases.passMedicalRecord =
-              'you have not passed the medical record yet';
-          } else if (
-            (checkMedicalRecord.medicalRecord &&
-              checkMedicalRecord.medicalRecord.accepted === true) ||
-            (checkMedicalRecord.mahremMedicalRecord &&
-              checkMedicalRecord.mahremMedicalRecord.accepted === true)
-          ) {
-            phases.passMedicalRecord = 'you have passed the medical record';
-          } else if (
-            (checkMedicalRecord.medicalRecord &&
-              checkMedicalRecord.medicalRecord.accepted === false) ||
-            (checkMedicalRecord.mahremMedicalRecord &&
-              checkMedicalRecord.mahremMedicalRecord.accepted === false)
-          ) {
-            phases.passMedicalRecord = 'you were refused by the medical record';
-          }
-          break;
-        }
-        case 'Paiement de Frais de Hadj': {
-          const checkPayment = await Winner.findOne({
-            userId: req.user._id,
-          }).populate({
-            path: 'payment',
-            select: 'refunded -_id',
-          });
-          console.log(checkPayment);
-          if (!checkPayment || !checkPayment.payment) {
-            console.log('no payment found');
-            phases.passPaiment = 'you have not paid yet';
-          } else if (checkPayment.payment.refunded === true) {
-            phases.passPaiment = 'you have been refunded';
-          } else if (checkPayment.payment.refunded === false) {
-            phases.passPaiment = 'you have paid';
-          }
-          break;
-        }
-        default: {
-          break;
-        }
+      const isMahrem = winner.isMahrem(req.user._id);
+      if (currentPhase.phaseName === 'Visite Médicale') {
+        handleMedicalPhase(winner, phases, isMahrem);
+      } else if (currentPhase.phaseName === 'Paiement de Frais de Hadj') {
+        handlePaymentPhase(winner, phases, isMahrem);
       }
     }
   }
+
   res.status(200).json({
     status: 'success',
     results: phases.length,
     data: {
-      //phases,
       registration: phases.registration,
       passMedicalRecord: phases.passMedicalRecord,
       passPaiment: phases.passPaiment,
     },
   });
 });
+
 exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
 
 exports.addCommuneParams = catchAsync(async (req, res, next) => {
