@@ -21,7 +21,7 @@ exports.getAllFlights = catchAsync(async (req, res, next) => {
     });
     if (!winner)
       return next(
-        new AppError('You are not allowed to perform this action', 403),
+        new AppError("Vous n'êtes pas autorisé à effectuer cette action.", 403),
       );
     const women = await Winner.find({ mahrem: req.user._id });
     const neededSeats = women.length + 1;
@@ -61,13 +61,19 @@ exports.addFlight = catchAsync(async (req, res, next) => {
 // Booking a flight
 exports.bookFlight = catchAsync(async (req, res, next) => {
   if (req.user.sex === 'female')
-    return next(new AppError('Females not allowed to book a flight', 400));
+    return next(
+      new AppError('Les femmes ne sont pas autorisées à réserver un vol.', 400),
+    );
   const { flightId } = req.params;
   const flight = await Flight.findById(flightId);
-  if (!flight) return next(new AppError('No flight found with that ID', 404));
+  if (!flight)
+    return next(new AppError('Aucun vol trouvé avec cet identifiant.', 404));
   if (!flight.allowedCities.includes(req.user.wilaya))
     return next(
-      new AppError('You are not allowed to book a flight from this city', 400),
+      new AppError(
+        "Vous n'êtes pas autorisé à réserver un vol depuis cette wilaya.",
+        400,
+      ),
     );
   // Check if the user is already booked on flight
   const alreadyBooked = await Flight.findOne({
@@ -75,10 +81,10 @@ exports.bookFlight = catchAsync(async (req, res, next) => {
   });
   if (alreadyBooked) {
     if (alreadyBooked._id.toString() === flightId)
-      return next(new AppError('You are already booked on this flight', 400));
+      return next(new AppError('Vous êtes déjà réservé sur ce vol.', 400));
     return next(
       new AppError(
-        `You are already booked on flight number: ${alreadyBooked.flightNumber}`,
+        `Vous êtes déjà réservé sur le vol numéro: ${alreadyBooked.flightNumber}`,
         400,
       ),
     );
@@ -87,7 +93,7 @@ exports.bookFlight = catchAsync(async (req, res, next) => {
   const women = await Winner.find({ mahrem: req.user._id });
   const neededSeats = women.length + 1;
   if (flight.emptySeats < neededSeats)
-    return next(new AppError('No available seats on this flight', 400));
+    return next(new AppError('Aucun siège disponible sur ce vol.', 400));
   const passengers = [{ user: req.user._id }].concat(
     women.map((w) => ({ user: w.userId })),
   );

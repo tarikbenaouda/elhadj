@@ -8,7 +8,9 @@ exports.deleteOne = (Model, name) =>
     const doc = await Model.findByIdAndDelete(req.params.id);
 
     if (!doc) {
-      return next(new AppError(`No ${name} found with that ID`, 404));
+      return next(
+        new AppError(`Aucun ${name} trouvé avec cet identifiant.`, 404),
+      );
     }
 
     res.status(204).json({
@@ -31,7 +33,9 @@ exports.updateOne = (Model, name, updaterId = null) =>
       },
     );
     if (!doc) {
-      return next(new AppError(`No ${name} found with that ID`, 404));
+      return next(
+        new AppError(`Aucun ${name} trouvé avec cet identifiant.`, 404),
+      );
     }
     res.status(200).json({
       status: 'success',
@@ -48,7 +52,7 @@ exports.createOne = (Model, name, creatorId = null) =>
       ...req.body,
     });
     if (!doc) {
-      return next(new AppError(` ${name} has not been created `, 404));
+      return next(new AppError(`${name} n'a pas été créé.`, 404));
     }
     res.status(201).json({
       status: 'success',
@@ -88,7 +92,9 @@ exports.getOne = (Model, name, popOptions) =>
     }
     const doc = await query;
     if (!doc) {
-      return next(new AppError(`No ${name} found with that ID`, 404));
+      return next(
+        new AppError(`Aucun ${name} trouvé avec cet identifiant.`, 404),
+      );
     }
     res.status(200).json({
       status: 'success',
@@ -98,13 +104,15 @@ exports.getOne = (Model, name, popOptions) =>
     });
   });
 
-exports.searchByNin = (Model, name) =>
+exports.searchByNin = (Model) =>
   catchAsync(async (req, res, next) => {
     const doc = await Model.findOne({
       nationalNumber: req.body.nationalNumber,
     });
     if (!doc) {
-      return next(new AppError('No user found with that NIN', 404));
+      return next(
+        new AppError('Aucun utilisateur trouvé avec ce numéro national.', 404),
+      );
     }
     res.status(200).json({
       status: 'success',

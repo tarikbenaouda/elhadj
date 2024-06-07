@@ -4,7 +4,6 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const factory = require('./handlerFactory');
 const APIFeatures = require('../utils/apiFeatures');
-const Wilaya = require('../models/wilayaModel');
 
 const filterObj = (obj, ...disallowedFields) => {
   const newObj = {};
@@ -24,7 +23,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.passwordConfirm) {
     return next(
       new AppError(
-        'This route is not for password updates. Please use /updateMyPassword.',
+        "Cette route n'est pas destinée aux mises à jour de mot de passe. Veuillez utiliser /updateMyPassword.",
         400,
       ),
     );
@@ -97,7 +96,9 @@ exports.updateUser = catchAsync(async (req, res, next) => {
   );
 
   if (!doc) {
-    return next(new AppError('No user found with that ID', 404));
+    return next(
+      new AppError('Aucun utilisateur trouvé avec cet identifiant.', 404),
+    );
   }
 
   res.status(200).json({
