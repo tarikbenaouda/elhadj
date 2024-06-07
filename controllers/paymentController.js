@@ -98,8 +98,10 @@ exports.refund = catchAsync(async (req, res, next) => {
     nationalNumber: req.body.nationalNumber,
   }).select('_id commune');
   const isWinner = await Winner.checkUserInWinnerModel(userId._id);
-  if (!isWinner || userId.commune !== req.user.commune)
-    return next(new AppError('User not found', 404));
+  const isMahrem = await Winner.findOne({ mahrem: userId._id });
+
+  if (!isWinner && !isMahrem) return next(new AppError('User not found', 404));
+
   const payment = await Payment.findOne({ userId: userId._id });
   if (!payment) return next(new AppError('User not paid', 400));
   if (payment.refunded)
