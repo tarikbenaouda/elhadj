@@ -19,6 +19,11 @@ const HealthCenter = require('../models/healthCentersModel');
 const Post = require('../models/postModel');
 const factory = require('./handlerFactory');
 
+const getCurrentDate = () =>
+  process.env.TEST_CURRENT_DATE
+    ? new Date(process.env.TEST_CURRENT_DATE)
+    : new Date();
+
 exports.getAlgorithm = factory.getAll(Algorithm);
 exports.createAlgorithm = factory.createOne(Algorithm, 'Algorithm', true);
 exports.deleteAlgorithm = factory.deleteOne(Algorithm, 'Algorithm');
@@ -104,9 +109,16 @@ exports.getDuplicatedList = catchAsync(async (req, res, next) => {
 });
 
 exports.executeDraw = catchAsync(async (req, res, next) => {
-  const { commune, quota, reservePlace, placesForEachCategory, ageCategories } =
-    req.communeData;
+  const {
+    commune,
+    quota,
+    reservePlace,
+    placesForEachCategory,
+    ageCategories,
+    oldPeopleQuota,
+  } = req.communeData;
 
+  console.log('oldPeopleQuota', oldPeopleQuota);
   if (!commune || !quota || !reservePlace) {
     return next(new AppError('Paramètres requis manquants.', 400));
   }
@@ -118,7 +130,7 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
       // placesForEachCategory,
       // ageCategories,
       page: 1,
-      limit: 151,
+      limit: 500,
     });
 
   const ageRanges = [
@@ -260,25 +272,25 @@ exports.getPhases = catchAsync(async (req, res, next) => {
       ]);
 
       if (!winner) {
-        return next(
-          new AppError('You are not allowed to perform this action', 403),
-        );
-      }
-
-      const isMahrem = winner.isMahrem(req.user._id);
-      if (currentPhase.phaseName === 'Visite Médicale') {
-        handleMedicalPhase(winner, phases, isMahrem);
-      } else if (currentPhase.phaseName === 'Paiement de Frais de Hadj') {
-        handlePaymentPhase(winner, phases, isMahrem);
+        phases.checkWinner = true;
+      } else {
+        const isMahrem = winner.isMahrem(req.user._id);
+        if (currentPhase.phaseName === 'Visite Médicale') {
+          handleMedicalPhase(winner, phases, isMahrem);
+        } else if (currentPhase.phaseName === 'Paiement de Frais de Hadj') {
+          handlePaymentPhase(winner, phases, isMahrem);
+        }
       }
     }
   }
-
+  const modifiedCurrentDate = getCurrentDate();
   res.status(200).json({
     status: 'success',
     results: phases.length,
     data: {
       phases,
+      currentDate: modifiedCurrentDate,
+      checkWinner: phases.checkWinner,
       registration: phases.registration,
       passMedicalRecord: phases.passMedicalRecord,
       passPaiment: phases.passPaiment,
@@ -435,17 +447,6 @@ exports.getStatistics = catchAsync(async (req, res, next) => {
       femmesGangnats,
       hadjCountEachYear,
       pieData,
-    },
-  });
-});
-
-exports.test = catchAsync(async (req, res, next) => {
-  const winners = await Winner.getWinnersByCommuneOrWilaya();
-  res.status(200).json({
-    status: 'success',
-    length: winners.length,
-    data: {
-      winners,
     },
   });
 });

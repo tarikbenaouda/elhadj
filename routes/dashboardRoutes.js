@@ -97,6 +97,4 @@ router.get(
   dashboardController.getStatistics,
 );
 
-router.get('/test', dashboardController.test);
-
 module.exports = router;

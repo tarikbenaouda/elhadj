@@ -1,13 +1,15 @@
+/* eslint-disable prefer-const */
 /* eslint-disable import/no-extraneous-dependencies */
 const cron = require('cron');
 const ProgressBar = require('../models/progressBarModel');
 const User = require('../models/userModel'); // Assuming you have a User model
 const sendEmail = require('./email'); // Import the sendEmail function
 const Winner = require('../models/winnersModel');
-//const RegistrationHistory
+const Registration = require('../models/registrationModel');
+const RegistrationHistory = require('../models/registrationHistoryModel');
 // Schedule a task to run every day at midnight in Algeria
 const job = new cron.CronJob(
-  '27 15 * * *',
+  '20 19 * * *',
   async () => {
     let currentDate;
     if (process.env.NODE_ENV === 'development') {
@@ -57,14 +59,91 @@ const job = new cron.CronJob(
     /// handle registratooions case
     ////
     // handle handle
-    let winners = await Winner.getWinnersByCommuneOrWilaya();
-    if (phase.phaseName === 'Visite Médicale') {
-    }
-    console.log('winners', winners);
     const currentPhase = await ProgressBar.findOne({
       endDate: { $gte: currentDay },
       status: 'current',
     });
+    let winners = await Winner.getWinnersByCommuneOrWilaya();
+    let userIds = [];
+    if (currentPhase.phaseName === 'Visite Médicale') {
+      winners.forEach((winner) => {
+        userIds.push(winner.userId);
+      });
+      const registrations = await Registration.find({
+        userId: { $nin: userIds },
+      });
+      const registrationsWithSelected = registrations
+        .map((registration) => ({
+          ...registration._doc,
+        }))
+        .then(() => {
+          console.log('check users after lottery');
+        });
+
+      //await RegistrationHistory.insertMany(registrationsWithSelected);
+    } else if (currentPhase.phaseName === 'Paiement de Frais de Hadj') {
+      winners.forEach((winner) => {
+        if (winner.mahrem === null) {
+          if (
+            winner.medicalRecord.accepted === false ||
+            winner.medicalRecord.accepted === null
+          ) {
+            userIds.push(winner.userId);
+          }
+        } else if (
+          winner.medicalRecord.accepted === false ||
+          winner.medicalRecord.accepted === null ||
+          winner.mahremMedicalRecord.accepted === false ||
+          winner.mahremMedicalRecord.accepted === null
+        ) {
+          userIds.push(winner.userId);
+        }
+      });
+      const registrations = await Registration.find({
+        userId: { $in: userIds },
+      });
+      const registrationsWithSelected = registrations.map((registration) => ({
+        ...registration._doc,
+        selected: true,
+      }));
+      await Promise.all([
+        RegistrationHistory.insertMany(registrationsWithSelected),
+        Winner.deleteMany({ userId: { $in: userIds } }),
+      ]).then(() => {
+        console.log('winners updated after medical record phase');
+      });
+    } else if (currentPhase.phaseName === 'Gestion Des Vols') {
+      winners.forEach((winner) => {
+        if (winner.mahrem === null) {
+          if (
+            winner.paymentt.refunded === true ||
+            winner.paymentt.refunded === null
+          ) {
+            userIds.push(winner.userId);
+          }
+        } else if (
+          winner.paymentt.refunded === true ||
+          winner.paymentt.refunded === null ||
+          winner.mahremPayment.refunded === true ||
+          winner.mahremPayment.refunded === null
+        ) {
+          userIds.push(winner.userId);
+        }
+      });
+      const registrations = await Registration.find({
+        userId: { $in: userIds },
+      });
+      const registrationsWithSelected = registrations.map((registration) => ({
+        ...registration._doc,
+        selected: true,
+      }));
+      await Promise.all([
+        RegistrationHistory.insertMany(registrationsWithSelected),
+        Winner.deleteMany({ userId: { $in: userIds } }),
+      ]).then(() => {
+        console.log('winners updated after payment phase');
+      });
+    }
     if (!currentPhase) {
       console.log('No current phase found');
       const upcomingPhase = await ProgressBar.findOne({

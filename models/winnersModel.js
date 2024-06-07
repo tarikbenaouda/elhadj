@@ -133,44 +133,52 @@ winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (
       },
     },
     {
+      $lookup: {
+        from: 'payments',
+        localField: 'mahremPayment',
+        foreignField: '_id',
+        as: 'mahremPayment',
+      },
+    },
+    {
+      $unwind: {
+        path: '$mahremPayment',
+        preserveNullAndEmptyArrays: true, // Preserve documents where payment is null or empty
+      },
+    },
+    {
       $match: matchCondition,
     },
     {
       $addFields: {
         userId: '$winnerInfo._id',
-        // firstName: '$winnerInfo.firstName',
-        // lastName: '$winnerInfo.lastName',
-        // email: '$winnerInfo.email',
-        // birthdate: '$winnerInfo.birthdate',
-        // nationalNumber: '$winnerInfo.nationalNumber',
-        // commune: '$winnerInfo.commune',
-        // wilaya: '$winnerInfo.wilaya',
-        // //mahremId: { $ifNull: ['$mahremInfo._id', null] },
-        // mahremFirstName: { $ifNull: ['$mahremInfo.firstName', null] },
-        // mahremLastName: { $ifNull: ['$mahremInfo.lastName', null] },
-        // mahremEmail: { $ifNull: ['$mahremInfo.email', null] },
-        // mahremBirthdate: { $ifNull: ['$mahremInfo.birthdate', null] },
-        // mahremNationalNumber: { $ifNull: ['$mahremInfo.nationalNumber', null] },
-        // mahremCommune: { $ifNull: ['$mahremInfo.commune', null] },
-        // mahremWilaya: { $ifNull: ['$mahremInfo.wilaya', null] },
+        firstName: '$winnerInfo.firstName',
+        lastName: '$winnerInfo.lastName',
+        email: '$winnerInfo.email',
+        birthdate: '$winnerInfo.birthdate',
+        nationalNumber: '$winnerInfo.nationalNumber',
+        commune: '$winnerInfo.commune',
+        wilaya: '$winnerInfo.wilaya',
         medicalRecord: {
           accepted: { $ifNull: ['$medicalRecordInfo.accepted', null] },
         },
         mahremMedicalRecord: {
           accepted: { $ifNull: ['$mahremMedicalRecordInfo.accepted', null] },
         },
-        payment: {
-          _id: { $ifNull: ['$payment._id', null] },
+        paymentt: {
+          refunded: { $ifNull: ['$payment.refunded', null] },
+        },
+        mahremPaymentt: {
+          refunded: { $ifNull: ['$mahremPayment.refunded', null] },
         },
       },
     },
     {
       $project: {
-        // Exclude winnerInfo object
-        // Exclude mahremInfo object
         medicalRecordInfo: 0,
         mahremMedicalRecordInfo: 0, // Exclude medicalRecordInfo object
         payment: 0, // Exclude payment object
+        mahremPayment: 0, // Exclude mahremPayment object
         createdAt: 0, // Exclude createdAt field
         _id: 0, // Exclude _id field
         __v: 0, // Exclude __v field

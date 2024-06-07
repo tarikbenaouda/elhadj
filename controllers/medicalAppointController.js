@@ -14,7 +14,7 @@ exports.getAllpatients = catchAsync(async (req, res, next) => {
         patient: winner.userId,
       });
       const mahremAppointment = await MedicalRecord.findOne({
-        patient: winner.mahremId,
+        patient: winner.mahrem,
       });
       const mahremExist = Boolean(winner.mahrem);
       if (medicalAppointment) {
@@ -32,6 +32,7 @@ exports.getAllpatients = catchAsync(async (req, res, next) => {
   );
   res.status(200).json({
     status: 'success',
+    length: winners.length,
     data: {
       data: winners,
     },
@@ -66,7 +67,12 @@ exports.addMedicalRecord = catchAsync(async (req, res, next) => {
   });
   const checkMahrem = winner.isMahrem(record.patient);
   console.log(checkMahrem);
-  if (winner) {
+  if (checkMahrem) {
+    winner.mahremMedicalRecord = record._id;
+    console.log('mahrem', winner);
+    await winner.save();
+  } else {
+    console.log('winner', winner);
     winner.medicalRecord = record._id;
     await winner.save();
   }
