@@ -13,19 +13,26 @@ exports.getAllpatients = catchAsync(async (req, res, next) => {
       const medicalAppointment = await MedicalRecord.findOne({
         patient: winner.userId,
       });
+      const mahremAppointment = await MedicalRecord.findOne({
+        patient: winner.mahremId,
+      });
+      const mahremExist = Boolean(winner.mahrem);
       if (medicalAppointment) {
         winner.consulted = true;
       } else {
         winner.consulted = false;
       }
+      if (mahremAppointment) {
+        winner.mahremConsulted = true;
+      } else if (mahremExist && !mahremAppointment) {
+        winner.mahremConsulted = false;
+      }
       return winner;
     }),
   );
-
   res.status(200).json({
     status: 'success',
     data: {
-      results: winners.length,
       data: winners,
     },
   });
@@ -52,10 +59,11 @@ exports.addMedicalRecord = catchAsync(async (req, res, next) => {
     return next(new AppError(' Medical Record has not been created ', 404));
   }
 
-  // Find the winner with the same userId as the patientId in the medical record
-  const winner = await Winner.findOne({ userId: record.patient });
-
-  // If a winner is found, update their medicalRecord field with the ID of the new medical record
+  const winner = await Winner.findOne({
+    $or: [{ userId: record.patient }, { mahrem: record.patient }],
+  });
+  const checkMahrem = winner.isMahrem(record.patient);
+  console.log(checkMahrem);
   if (winner) {
     winner.medicalRecord = record._id;
     await winner.save();
@@ -69,11 +77,6 @@ exports.addMedicalRecord = catchAsync(async (req, res, next) => {
   });
 });
 
-// exports.addMedicalRecord = factory.createOne(
-//   MedicalRecord,
-//   'Medical Record',
-//   true,
-// );
 exports.updateMedicalRecord = factory.updateOne(
   MedicalRecord,
   'Medical Record',

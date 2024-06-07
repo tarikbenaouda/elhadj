@@ -92,4 +92,6 @@ router.patch(
   dashboardController.updatePoste,
 );
 
+router.get('/test', dashboardController.test);
+
 module.exports = router;

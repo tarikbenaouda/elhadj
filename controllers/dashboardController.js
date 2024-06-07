@@ -272,6 +272,7 @@ exports.getPhases = catchAsync(async (req, res, next) => {
     status: 'success',
     results: phases.length,
     data: {
+      phases,
       registration: phases.registration,
       passMedicalRecord: phases.passMedicalRecord,
       passPaiment: phases.passPaiment,
@@ -359,3 +360,14 @@ exports.updateHealthCenter = factory.updateOne(HealthCenter, 'HealthCenter');
 exports.getAllPostes = factory.getAll(Post);
 exports.addPoste = factory.createOne(Post, 'Poste');
 exports.updatePoste = factory.updateOne(Post, 'Poste');
+
+exports.test = catchAsync(async (req, res, next) => {
+  const winners = await Winner.getWinnersByCommuneOrWilaya();
+  res.status(200).json({
+    status: 'success',
+    length: winners.length,
+    data: {
+      winners,
+    },
+  });
+});

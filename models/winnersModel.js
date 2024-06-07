@@ -50,7 +50,9 @@ winnersSchema.statics.checkUserInWinnerModel = async function (userId) {
   return Boolean(user);
 };
 
-winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (options) {
+winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (
+  options = {},
+) {
   const { commune, wilaya, id } = options;
   const matchCondition = {};
   // if (id && mongoose.Types.ObjectId.isValid(id)) {
@@ -104,6 +106,20 @@ winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (options) {
     },
     {
       $lookup: {
+        from: 'medicalrecords',
+        localField: 'mahremMedicalRecord',
+        foreignField: '_id',
+        as: 'mahremMedicalRecordInfo',
+      },
+    },
+    {
+      $unwind: {
+        path: '$mahremMedicalRecordInfo',
+        preserveNullAndEmptyArrays: true, // Preserve documents where mahremMedicalRecordInfo is null or empty
+      },
+    },
+    {
+      $lookup: {
         from: 'payments',
         localField: 'payment',
         foreignField: '_id',
@@ -122,22 +138,26 @@ winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (options) {
     {
       $addFields: {
         userId: '$winnerInfo._id',
-        firstName: '$winnerInfo.firstName',
-        lastName: '$winnerInfo.lastName',
-        email: '$winnerInfo.email',
-        birthdate: '$winnerInfo.birthdate',
-        nationalNumber: '$winnerInfo.nationalNumber',
-        commune: '$winnerInfo.commune',
-        wilaya: '$winnerInfo.wilaya',
-        mahrem: {
-          // _id: { $ifNull: ['$mahremInfo._id', null] },
-          firstName: { $ifNull: ['$mahremInfo.firstName', null] },
-          lastName: { $ifNull: ['$mahremInfo.lastName', null] },
-          mahremId: { $ifNull: ['$mahremInfo._id', null] },
-        },
+        // firstName: '$winnerInfo.firstName',
+        // lastName: '$winnerInfo.lastName',
+        // email: '$winnerInfo.email',
+        // birthdate: '$winnerInfo.birthdate',
+        // nationalNumber: '$winnerInfo.nationalNumber',
+        // commune: '$winnerInfo.commune',
+        // wilaya: '$winnerInfo.wilaya',
+        // //mahremId: { $ifNull: ['$mahremInfo._id', null] },
+        // mahremFirstName: { $ifNull: ['$mahremInfo.firstName', null] },
+        // mahremLastName: { $ifNull: ['$mahremInfo.lastName', null] },
+        // mahremEmail: { $ifNull: ['$mahremInfo.email', null] },
+        // mahremBirthdate: { $ifNull: ['$mahremInfo.birthdate', null] },
+        // mahremNationalNumber: { $ifNull: ['$mahremInfo.nationalNumber', null] },
+        // mahremCommune: { $ifNull: ['$mahremInfo.commune', null] },
+        // mahremWilaya: { $ifNull: ['$mahremInfo.wilaya', null] },
         medicalRecord: {
-          //_id: { $ifNull: ['$medicalRecordInfo._id', null] },
           accepted: { $ifNull: ['$medicalRecordInfo.accepted', null] },
+        },
+        mahremMedicalRecord: {
+          accepted: { $ifNull: ['$mahremMedicalRecordInfo.accepted', null] },
         },
         payment: {
           _id: { $ifNull: ['$payment._id', null] },
@@ -146,13 +166,30 @@ winnersSchema.statics.getWinnersByCommuneOrWilaya = async function (options) {
     },
     {
       $project: {
-        winnerInfo: 0, // Exclude winnerInfo object
-        mahremInfo: 0, // Exclude mahremInfo object
-        medicalRecordInfo: 0, // Exclude medicalRecordInfo object
+        // Exclude winnerInfo object
+        // Exclude mahremInfo object
+        medicalRecordInfo: 0,
+        mahremMedicalRecordInfo: 0, // Exclude medicalRecordInfo object
         payment: 0, // Exclude payment object
         createdAt: 0, // Exclude createdAt field
         _id: 0, // Exclude _id field
         __v: 0, // Exclude __v field
+        'winnerInfo.passwordChangedAt': 0,
+        'winnerInfo.role': 0,
+        'winnerInfo.__v': 0,
+        'winnerInfo._id': 0,
+        'winnerInfo.password': 0,
+        'winnerInfo.address': 0,
+        'winnerInfo.phone': 0,
+        'winnerInfo.sex': 0,
+        'mahremInfo.passwordChangedAt': 0,
+        'mahremInfo.role': 0,
+        'mahremInfo.__v': 0,
+
+        'mahremInfo.password': 0,
+        'mahremInfo.address': 0,
+        'mahremInfo.phone': 0,
+        'mahremInfo.sex': 0,
       },
     },
   ]);

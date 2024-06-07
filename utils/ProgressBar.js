@@ -4,10 +4,10 @@ const ProgressBar = require('../models/progressBarModel');
 const User = require('../models/userModel'); // Assuming you have a User model
 const sendEmail = require('./email'); // Import the sendEmail function
 const Winner = require('../models/winnersModel');
-
+//const RegistrationHistory
 // Schedule a task to run every day at midnight in Algeria
 const job = new cron.CronJob(
-  '4 15 * * *',
+  '27 15 * * *',
   async () => {
     let currentDate;
     if (process.env.NODE_ENV === 'development') {
@@ -31,16 +31,15 @@ const job = new cron.CronJob(
       endDate: { $lt: currentDay },
       status: 'current',
     });
+
     endedPhases.forEach(async (phase) => {
       phase.status = 'completed';
       await phase.save();
-      // Find the user associated with this phase and send them an email
-      //const user = await User.findById(phase.userId);
       const user = {
         firstName: 'test',
         lastName: 'test',
-        email: 't.kahia@esi-sba.dz',
-      }; // Assuming there's a userId field in phase
+        email: 'tayebkahia009@gmail.com',
+      };
       if (user && user.email) {
         if (user && user.email) {
           try {
@@ -55,6 +54,13 @@ const job = new cron.CronJob(
         }
       }
     });
+    /// handle registratooions case
+    ////
+    // handle handle
+    let winners = await Winner.getWinnersByCommuneOrWilaya();
+    if (phase.phaseName === 'Visite Médicale') {
+    }
+    console.log('winners', winners);
     const currentPhase = await ProgressBar.findOne({
       endDate: { $gte: currentDay },
       status: 'current',
@@ -70,11 +76,6 @@ const job = new cron.CronJob(
           { _id: upcomingPhase._id },
           { status: 'current' },
         );
-
-        if (upcomingPhase.phaseName === 'Paiement de Frais de Hadj') {
-          const winners = await Winner.find().populate({});
-        }
-
         const user = {
           firstName: 'test',
           lastName: 'test',
