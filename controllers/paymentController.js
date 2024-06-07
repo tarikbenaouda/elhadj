@@ -28,7 +28,9 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
 });
 exports.pay = catchAsync(async (req, res, next) => {
   if (!req.body.nationalNumber || !req.body.amount)
-    return next(new AppError('National number and amount are required', 400));
+    return next(
+      new AppError('Le numéro national et le montant sont obligatoires', 400),
+    );
   const userId = await User.findOne({
     nationalNumber: req.body.nationalNumber,
   }).select('_id firstName lastName email birthdate commune');
@@ -36,14 +38,15 @@ exports.pay = catchAsync(async (req, res, next) => {
   const isWinner = await Winner.checkUserInWinnerModel(userId._id);
   const isMahrem = await Winner.findOne({ mahrem: userId._id });
 
-  if (!isWinner && !isMahrem) return next(new AppError('User not found', 404));
+  if (!isWinner && !isMahrem)
+    return next(new AppError('Utilisateur non trouvé', 404));
 
   const alreadyPaid = await Payment.findOne({ userId: userId._id });
   if (alreadyPaid) {
     if (alreadyPaid.refunded === false)
-      return next(new AppError('User already paid', 400));
+      return next(new AppError("L'utilisateur a déjà payé", 400));
     if (alreadyPaid.refunded === true)
-      return next(new AppError('User already refunded', 400));
+      return next(new AppError("L'utilisateur a déjà été remboursé", 400));
   }
   if (req.body.confirm) {
     const post = await Post.findOne({ postman: req.user._id }).lean();
@@ -93,17 +96,20 @@ exports.pay = catchAsync(async (req, res, next) => {
 // Refund function
 exports.refund = catchAsync(async (req, res, next) => {
   if (!req.body.nationalNumber)
-    return next(new AppError('National number is required', 400));
+    return next(new AppError('Le numéro national est obligatoire', 400));
   const userId = await User.findOne({
     nationalNumber: req.body.nationalNumber,
   }).select('_id commune');
   const isWinner = await Winner.checkUserInWinnerModel(userId._id);
-  if (!isWinner || userId.commune !== req.user.commune)
-    return next(new AppError('User not found', 404));
+  const isMahrem = await Winner.findOne({ mahrem: userId._id });
+
+  if (!isWinner && !isMahrem)
+    return next(new AppError('Utilisateur non trouvé', 404));
+
   const payment = await Payment.findOne({ userId: userId._id });
-  if (!payment) return next(new AppError('User not paid', 400));
+  if (!payment) return next(new AppError("L'utilisateur n'a pas payé", 400));
   if (payment.refunded)
-    return next(new AppError('Payment already refunded', 400));
+    return next(new AppError('Le paiement a déjà été remboursé', 400));
   payment.refunded = true;
   await payment.save();
   res.status(200).json({

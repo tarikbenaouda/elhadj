@@ -54,7 +54,9 @@ exports.updateAlgorithm = catchAsync(async (req, res, next) => {
     { new: true, runValidators: true },
   );
   if (!algorithm) {
-    return next(new AppError('No algorithm found with that ID', 404));
+    return next(
+      new AppError('Aucun algorithme trouvé avec cet identifiant.', 404),
+    );
   }
 
   res.status(200).json({
@@ -68,7 +70,7 @@ exports.updateAlgorithm = catchAsync(async (req, res, next) => {
 exports.getUserParams = catchAsync(async (req, res, next) => {
   const managerId = req.user._id;
   if (!managerId || !mongoose.Types.ObjectId.isValid(managerId)) {
-    return next(new AppError('Invalid admin ID.', 400));
+    return next(new AppError('Identifiant administrateur invalide.', 400));
   }
   const commune = await Commune.findOne({
     manager: new mongoose.Types.ObjectId(managerId),
@@ -76,7 +78,9 @@ exports.getUserParams = catchAsync(async (req, res, next) => {
   await commune.calculatePlacesForEachCategory();
   req.communeData = commune;
   if (!req.communeData) {
-    return next(new AppError('No commune found for this admin.', 404));
+    return next(
+      new AppError('Aucune commune trouvée pour cet administrateur.', 404),
+    );
   }
   next();
 });
@@ -84,11 +88,11 @@ exports.getUserParams = catchAsync(async (req, res, next) => {
 exports.getDuplicatedList = catchAsync(async (req, res, next) => {
   const { commune } = req.communeData;
   if (!commune) {
-    return next(new AppError('Missing required parameters.', 400));
+    return next(new AppError('Paramètres requis manquants.', 400));
   }
   const drawPool = await Registration.getDrawPool(commune);
   if (!drawPool) {
-    return next(new AppError('Draw pool is empty.', 404));
+    return next(new AppError('Le pool de tirage est vide.', 404));
   }
   res.status(200).json({
     status: 'success',
@@ -102,7 +106,7 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
     req.communeData;
 
   if (!commune || !quota || !reservePlace) {
-    return next(new AppError('Missing required parameters.', 400));
+    return next(new AppError('Paramètres requis manquants.', 400));
   }
   const { winner, remainingQuota, reserve, remainingReserve, drawPool } =
     await Registration.performDraw({
@@ -129,7 +133,7 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
   );
 
   if (remainingQuota === 0 && remainingReserve === 0 && !reserve) {
-    return next(new AppError('the Draw is finished', 404));
+    return next(new AppError('Le tirage est terminé.', 404));
   }
 
   res.status(201).json({
@@ -285,7 +289,7 @@ exports.updatePhase = factory.updateOne(ProgressBar, 'Phase');
 exports.addCommuneParams = catchAsync(async (req, res, next) => {
   const { commune, quota, reservePlace, oldPeopleQuota } = req.body;
   if (!commune) {
-    return next(new AppError('Missing Commune parameters.', 400));
+    return next(new AppError('Paramètres de commune manquants.', 400));
   }
   const updatedCommune = await Commune.findOneAndUpdate(
     { commune: commune },
@@ -308,7 +312,7 @@ exports.addCommuneParams = catchAsync(async (req, res, next) => {
 exports.getAllCommune = catchAsync(async (req, res, next) => {
   const commune = await Commune.find({ wilaya: req.user.wilaya });
   if (!commune)
-    return next(new AppError('No commune found for this wilaya', 404));
+    return next(new AppError('Aucune commune trouvée pour cette wilaya.', 404));
   res.status(200).json({
     status: 'success',
     results: commune.length,
@@ -321,7 +325,7 @@ exports.getAllCommune = catchAsync(async (req, res, next) => {
 exports.addWilayaParams = catchAsync(async (req, res, next) => {
   const { name, quota, oldPeopleQuota } = req.body;
   if (!name) {
-    return next(new AppError('Missing Wilaya name.', 400));
+    return next(new AppError('Nom de la wilaya manquant.', 400));
   }
   const updatedWilaya = await Wilaya.findOneAndUpdate(
     {

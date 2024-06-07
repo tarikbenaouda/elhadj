@@ -59,12 +59,16 @@ exports.signup = catchAsync(async (req, res, next) => {
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return next(new AppError('Please provide email and password!', 400));
+    return next(
+      new AppError("Veuillez fournir l'e-mail et le mot de passe !", 400),
+    );
   }
   const user = await User.findOne({ email }).select('+password');
-  if (!user) return next(new AppError('Incorrect email or password', 401));
+  if (!user)
+    return next(new AppError('E-mail ou mot de passe incorrect.', 401));
   const correct = await user.correctPassword(password, user.password);
-  if (!correct) return next(new AppError('Incorrect email or password', 401));
+  if (!correct)
+    return next(new AppError('E-mail ou mot de passe incorrect.', 401));
   createSendToken(user, 200, res);
 });
 
@@ -76,22 +80,22 @@ exports.protect = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   )
     token = req.headers.authorization.split(' ')[1];
-  if (!token) return next(new AppError('You are not logged in .', 401));
+  if (!token) return next(new AppError("Vous n'êtes pas connecté.", 401));
   // Token verification
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
   // User still exist ?
   const currentUser = await User.findById(decoded.id);
   if (!currentUser)
     return next(
-      new AppError(
-        'The user belonging to this token does no longer exist.',
-        401,
-      ),
+      new AppError("L'utilisateur associé à ce jeton n'existe plus.", 401),
     );
   // User changed password after the token was issued
   if (currentUser.changedPasswordAfter(decoded.iat))
     return next(
-      new AppError('User recently changed password please log in again', 401),
+      new AppError(
+        "L'utilisateur a récemment changé de mot de passe, veuillez vous reconnecter.",
+        401,
+      ),
     );
   req.user = currentUser;
 
@@ -103,7 +107,10 @@ exports.restrictTo =
   (req, res, next) => {
     if (!roles.includes(req.user.role))
       return next(
-        new AppError('You do not have permission to perform this action', 403), // forbidden
+        new AppError(
+          "Vous n'avez pas la permission d'effectuer cette action.",
+          403,
+        ), // forbidden
       );
     next();
   };
@@ -112,19 +119,25 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   // 1) Get user based on POSTed email
   const user = await User.findOne({ email: req.body.email });
   if (!user)
-    return next(new AppError('There is no user with that email address.', 404));
+    return next(
+      new AppError(
+        "Il n'y a aucun utilisateur avec cette adresse e-mail.",
+        404,
+      ),
+    );
   // 2) Generate the random reset token
   const resetToken = await user.createPasswordResetToken();
-  const message = `Here is your password reset OTP: ${resetToken}`;
+  const message = `Voici votre code OTP de réinitialisation de mot de passe : ${resetToken}.`;
   try {
     await sendEmail({
       email: user.email,
-      subject: 'Your Password reset token (valid for 10 mins).',
+      subject:
+        'Votre token de réinitialisation de mot de passe (valable pendant 10 minutes).',
       text: message,
     });
     res.status(200).json({
       status: 'success',
-      message: 'Token sent to your email!',
+      message: 'Token envoyé à votre adresse e-mail !',
     });
   } catch (err) {
     user.passwordResetToken = undefined;
@@ -133,7 +146,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
     return next(
       new AppError(
-        'There was a problem sending the email please try again later.',
+        "Un problème est survenu lors de l'envoi de l'e-mail. Veuillez réessayer plus tard.",
         500,
       ),
     );
@@ -142,14 +155,20 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 exports.verifyOTP = catchAsync(async (req, res, next) => {
   const { email, otp } = req.body;
   if (!email || !otp) {
-    return next(new AppError('Please provide email and otp!', 400));
+    return next(new AppError("Veuillez fournir l'e-mail et le code OTP.", 400));
   }
   const user = await User.findOne({ email });
   if (!user)
-    return next(new AppError('There is no user with that email address.', 404));
-  if (!user.verifyOTP(otp)) return next(new AppError('Incorrect OTP', 401));
+    return next(
+      new AppError(
+        "Aucun utilisateur n'existe avec cette adresse e-mail.",
+        404,
+      ),
+    );
+  if (!user.verifyOTP(otp))
+    return next(new AppError('Code OTP incorrect.', 401));
   if (Date.now() > user.passwordResetExpires)
-    return next(new AppError('OTP expired', 401));
+    return next(new AppError('Le code OTP a expiré', 401));
   createSendToken(user, 200, res);
 });
 exports.resetPassword = catchAsync(async (req, res, next) => {
@@ -165,7 +184,7 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 
   // 2) Check if POSTed current password is correct
   if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
-    return next(new AppError('Your current password is wrong.', 401));
+    return next(new AppError('Votre mot de passe actuel est incorrect.', 401));
   }
 
   // 3) If so, update password
@@ -184,7 +203,9 @@ const getCurrentDate = () =>
 exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
   const phase = await ProgressBar.findOne({ status: 'current' });
   if (!phase) {
-    return next(new AppError('No phase found with the current status', 404));
+    return next(
+      new AppError('Aucune phase trouvée avec le statut actuel.', 404),
+    );
   }
   const currentDate = getCurrentDate();
   if (currentDate >= phase.startDate && currentDate <= phase.endDate) {
@@ -192,7 +213,7 @@ exports.checkCurrentPhase = catchAsync(async (req, res, next) => {
   }
   return next(
     new AppError(
-      'This action is not allowed for the current phase status',
+      "Cette action n'est pas autorisée pour le statut actuel de la phase.",
       403,
     ),
   );
@@ -204,7 +225,7 @@ exports.restrictToWinnerOrMahrem = catchAsync(async (req, res, next) => {
   });
   if (!winner)
     return next(
-      new AppError('You are not allowed to perform this action', 403),
+      new AppError("Vous n'êtes pas autorisé à effectuer cette action.", 403),
     );
   next();
 }); // Add closing parenthesis here

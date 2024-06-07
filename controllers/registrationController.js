@@ -69,17 +69,22 @@ exports.register = catchAsync(async (req, res, next) => {
   let mahrem;
   if (req.user.sex === 'female') {
     if (!req.body.mahrem)
-      return next(new AppError("You can't register without mahrem!", 400));
+      return next(
+        new AppError('Vous ne pouvez pas vous inscrire sans mahrem!', 400),
+      );
 
     mahrem = await User.findOne({ nationalNumber: req.body.mahrem });
     if (!mahrem)
       return next(
-        new AppError('There is no user with this national number!', 404),
+        new AppError(
+          "Il n'y a pas d'utilisateur avec ce numéro national!",
+          404,
+        ),
       );
     if (mahrem.sex === 'female')
-      return next(new AppError('Mahrem can not be a female!', 400));
+      return next(new AppError('Mahrem ne peut pas être une femme!', 400));
     if (mahrem.role !== 'user')
-      return next(new AppError('Mahrem must be a normal user!', 400));
+      return next(new AppError('Mahrem doit être un utilisateur normal!', 400));
   }
   const {
     defaultCoefficient,
@@ -97,7 +102,8 @@ exports.register = catchAsync(async (req, res, next) => {
   )
     return next(
       new AppError(
-        `It has been less than ${hadjLimitToApply} years since your last hadj!`,
+        `Il y a moins de ${hadjLimitToApply} ans depuis votre dernier Hadj !
+        Vous pouvez vous inscrire après ${hadjYear >= new Date(Date.now()).getFullYear() - hadjLimitToApply} ans.`,
         400,
       ),
     );
@@ -124,6 +130,6 @@ exports.register = catchAsync(async (req, res, next) => {
       },
     });
   } catch (err) {
-    return next(new AppError('You have already registered!', 400));
+    return next(new AppError('Vous êtes déjà inscrit !', 400));
   }
 });

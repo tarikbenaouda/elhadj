@@ -1,23 +1,23 @@
 const AppError = require('../utils/appError');
 
 const handleCastErrorDB = (err) => {
-  const message = `Invalid ${err.path}: ${err.value}`;
+  const message = `Invalide ${err.path}: ${err.value}`;
   return new AppError(message, 400);
 };
 const handleDuplicateFieldsDB = (err) => {
   const value = Object.entries(err.keyValue).at(0).at(1);
-  const message = `Duplicate field value: '${value}'. Please use another `;
+  const message = `Valeur de champ en double : '${value}'. Veuillez en utiliser une autre.`;
   return new AppError(message, 400);
 };
 const handleValidationErrorDB = (err) => {
   const errors = Object.values(err.errors).map((el) => el.message);
-  const message = `Invalid input data. ${errors.join('. ')}`;
+  const message = `Données d'entrée invalides. ${errors.join('. ')}.`;
   return new AppError(message, 400);
 };
 const handleJWTError = () =>
-  new AppError('Invalid error please log in again!', 401);
+  new AppError('Erreur invalide. Veuillez vous reconnecter !', 401);
 const handleTokenExpiredError = () =>
-  new AppError('You token has expired! Please log in again', 401);
+  new AppError('Votre jeton a expiré ! Veuillez vous reconnecter.', 401);
 
 const sendErrorDev = (err, res) => {
   res.status(err.statusCode).json({
@@ -40,7 +40,7 @@ const sendErrorProd = (err, res) => {
 
     res.status(500).json({
       status: 'error',
-      message: 'Something went very wrong!',
+      message: "Quelque chose s'est très mal passé !",
     });
   }
 };

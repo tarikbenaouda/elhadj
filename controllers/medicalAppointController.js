@@ -40,7 +40,9 @@ exports.getAllpatients = catchAsync(async (req, res, next) => {
 exports.getMedicalRecord = catchAsync(async (req, res, next) => {
   const record = await MedicalRecord.findOne({ patient: req.params.id });
   if (!record) {
-    return next(new AppError('No Medical record found with that ID', 404));
+    return next(
+      new AppError('Aucun dossier médical trouvé avec cet identifiant.', 404),
+    );
   }
   res.status(200).json({
     status: 'success',
@@ -56,7 +58,7 @@ exports.addMedicalRecord = catchAsync(async (req, res, next) => {
     ...req.body,
   });
   if (!record) {
-    return next(new AppError(' Medical Record has not been created ', 404));
+    return next(new AppError("Le dossier médical n'a pas été créé.", 404));
   }
 
   const winner = await Winner.findOne({
