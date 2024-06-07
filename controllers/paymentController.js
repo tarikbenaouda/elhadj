@@ -32,9 +32,12 @@ exports.pay = catchAsync(async (req, res, next) => {
   const userId = await User.findOne({
     nationalNumber: req.body.nationalNumber,
   }).select('_id firstName lastName email birthdate commune');
+
   const isWinner = await Winner.checkUserInWinnerModel(userId._id);
-  if (!isWinner || userId.commune !== req.user.commune)
-    return next(new AppError('User not found', 404));
+  const isMahrem = await Winner.findOne({ mahrem: userId._id });
+
+  if (!isWinner && !isMahrem) return next(new AppError('User not found', 404));
+
   const alreadyPaid = await Payment.findOne({ userId: userId._id });
   if (alreadyPaid) {
     if (alreadyPaid.refunded === false)
