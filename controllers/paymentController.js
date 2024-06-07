@@ -32,9 +32,12 @@ exports.pay = catchAsync(async (req, res, next) => {
   const userId = await User.findOne({
     nationalNumber: req.body.nationalNumber,
   }).select('_id firstName lastName email birthdate commune');
+
   const isWinner = await Winner.checkUserInWinnerModel(userId._id);
-  if (!isWinner || userId.commune !== req.user.commune)
-    return next(new AppError('User not found', 404));
+  const isMahrem = await Winner.findOne({ mahrem: userId._id });
+
+  if (!isWinner && !isMahrem) return next(new AppError('User not found', 404));
+
   const alreadyPaid = await Payment.findOne({ userId: userId._id });
   if (alreadyPaid) {
     if (alreadyPaid.refunded === false)
@@ -53,8 +56,13 @@ exports.pay = catchAsync(async (req, res, next) => {
       })
     ).toObject();
     // adding payment field to winner document
-    const winner = await Winner.findOne({ userId: userId._id });
-    winner.payment = payment._id;
+    let winner = await Winner.findOne({ userId: userId._id });
+
+    if (winner) winner.payment = payment._id;
+    else {
+      winner = await Winner.findOne({ mahrem: userId._id });
+      winner.mahremPayment = payment._id;
+    }
     await winner.save();
     const user = await User.findById(userId._id)
       .select('firstName lastName email birthdate nationalNumber paiment')
