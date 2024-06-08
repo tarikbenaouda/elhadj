@@ -130,7 +130,7 @@ exports.executeDraw = catchAsync(async (req, res, next) => {
       // placesForEachCategory,
       // ageCategories,
       page: 1,
-      limit: 500,
+      limit: 150,
     });
 
   const ageRanges = [

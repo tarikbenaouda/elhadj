@@ -11,8 +11,9 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
     Winner.getWinnersByCommuneOrWilaya({ commune }),
     Payment.getPaymentsByCommune(commune),
   ]);
+  console.log(winners[0]);
   const winnersIds = winners.map((w) => w.userId);
-  const mahremIds = winners.map((w) => w.mahrem._id).filter((el) => el);
+  const mahremIds = winners.map((w) => w.mahrem?._id).filter((el) => el);
   const mahrems = (
     await User.find({ _id: { $in: mahremIds } }).select(
       '-__v -role -passwordChangedAt -sex -phone',
