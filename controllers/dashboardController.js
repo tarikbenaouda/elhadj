@@ -270,7 +270,7 @@ exports.getPhases = catchAsync(async (req, res, next) => {
           select: 'refunded -_id',
         },
       ]);
-
+      console.log('winner', winner);
       if (!winner) {
         phases.checkWinner = true;
       } else {
@@ -284,6 +284,7 @@ exports.getPhases = catchAsync(async (req, res, next) => {
     }
   }
   const modifiedCurrentDate = getCurrentDate();
+  console.log(modifiedCurrentDate);
   res.status(200).json({
     status: 'success',
     results: phases.length,
